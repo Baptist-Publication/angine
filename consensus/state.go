@@ -27,7 +27,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/spf13/viper"
 	bc "github.com/Baptist-Publication/angine/blockchain"
 	mempl "github.com/Baptist-Publication/angine/mempool"
 	csspb "github.com/Baptist-Publication/angine/protos/consensus"
@@ -36,6 +35,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -364,6 +364,9 @@ func (cs *ConsensusState) BindReactor(r *ConsensusReactor) {
 }
 
 func (cs *ConsensusState) SetValSetLoader(f agtypes.ValSetLoaderFunc) {
+	if cs == nil || cs.state == nil {
+		return
+	}
 	// cs.valSetLoader = f
 	cs.state.SetValSetLoader(f)
 }
