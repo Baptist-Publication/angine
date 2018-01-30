@@ -23,12 +23,11 @@ import (
 	"os"
 	"sync"
 
-	"go.uber.org/zap"
-
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	"github.com/Baptist-Publication/chorus-module/lib/ed25519"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"go.uber.org/zap"
 )
 
 const (
@@ -51,7 +50,6 @@ func voteToStep(vote *pbtypes.Vote) int8 {
 }
 
 type PrivValidatorJSON struct {
-	Address       Bytes              `json:"address"`
 	PubKey        crypto.StPubKey    `json:"pub_key"`
 	Coinbase      crypto.StPubKey    `json:"coin_base"`
 	LastHeight    INT                `json:"last_height"`
@@ -68,6 +66,8 @@ type PrivValidator struct {
 	PrivValidatorJSON
 	Signer `json:"-"`
 
+	address Bytes
+
 	// For persistence.
 	// Overloaded for testing.
 	filePath string
@@ -77,7 +77,6 @@ type PrivValidator struct {
 }
 
 func (pv *PrivValidator) CopyReset() (cp PrivValidator) {
-	cp.Address = pv.Address
 	cp.PubKey = pv.PubKey
 	cp.Coinbase = pv.Coinbase
 	cp.PrivKey = pv.PrivKey
@@ -152,7 +151,6 @@ func GenPrivValidator(logger *zap.Logger) *PrivValidator {
 	privKey := crypto.PrivKeyEd25519(*privKeyBytes)
 	return &PrivValidator{
 		PrivValidatorJSON: PrivValidatorJSON{
-			Address:       Bytes(pubKey.Address()),
 			PubKey:        crypto.StPubKey{&pubKey},
 			Coinbase:      crypto.StPubKey{&pubKey},
 			PrivKey:       crypto.StPrivKey{&privKey},
@@ -240,7 +238,12 @@ func (privVal *PrivValidator) Reset() {
 }
 
 func (privVal *PrivValidator) GetAddress() []byte {
-	return privVal.Address
+	if len(privVal.address) == 0 {
+		addr := privVal.PubKey.Address()
+		privVal.address = addr
+		return addr
+	}
+	return privVal.address
 }
 
 func (privVal *PrivValidator) GetPrivateKey() crypto.PrivKey {
@@ -323,7 +326,7 @@ func (privVal *PrivValidator) signBytesHRS(height, round INT, step int8, signByt
 }
 
 func (privVal *PrivValidator) String() string {
-	return fmt.Sprintf("PrivValidator{%X LH:%v, LR:%v, LS:%v}", privVal.Address, privVal.LastHeight, privVal.LastRound, privVal.LastStep)
+	return fmt.Sprintf("PrivValidator{%X LH:%v, LR:%v, LS:%v}", privVal.GetAddress(), privVal.LastHeight, privVal.LastRound, privVal.LastStep)
 }
 
 //-------------------------------------
@@ -335,7 +338,7 @@ func (pvs PrivValidatorsByAddress) Len() int {
 }
 
 func (pvs PrivValidatorsByAddress) Less(i, j int) bool {
-	return bytes.Compare(pvs[i].Address.Bytes(), pvs[j].Address.Bytes()) == -1
+	return bytes.Compare(pvs[i].GetAddress(), pvs[j].GetAddress()) == -1
 }
 
 func (pvs PrivValidatorsByAddress) Swap(i, j int) {
