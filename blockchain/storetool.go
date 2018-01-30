@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	cfg "github.com/spf13/viper"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	agtypes "github.com/Baptist-Publication/angine/types"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
+	cfg "github.com/spf13/viper"
 )
 
 var (
@@ -17,18 +17,16 @@ var (
 	ErrRevertBackup    = errors.New("revert from backup,not find data")
 )
 
-func BlockStoreDB(config *cfg.Viper) (dbm.DB, dbm.DB) {
+func BlockStoreDB(config *cfg.Viper) dbm.DB {
 	var (
-		db_backend     = config.GetString("db_backend")
-		db_dir         = config.GetString("db_dir")
-		db_archive_dir = config.GetString("db_archive_dir")
+		db_backend = config.GetString("db_backend")
+		db_dir     = config.GetString("db_dir")
 	)
-	return dbm.NewDB("blockstore", db_backend, db_dir),
-		dbm.NewDB("blockstore", db_backend, db_archive_dir)
+	return dbm.NewDB("blockstore", db_backend, db_dir)
 }
 
-func LoadBlockStore(blockStoreDB, blockArchiveDB dbm.DB, height agtypes.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
-	blockStore := NewBlockStore(blockStoreDB, blockArchiveDB)
+func LoadBlockStore(blockStoreDB dbm.DB, height agtypes.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
+	blockStore := NewBlockStore(blockStoreDB)
 	nextBlock := blockStore.LoadBlock(height + 1)
 	if nextBlock == nil {
 		return nil, nil, &pbtypes.BlockID{}
@@ -39,12 +37,11 @@ func LoadBlockStore(blockStoreDB, blockArchiveDB dbm.DB, height agtypes.INT) (*p
 
 type StoreTool struct {
 	db        dbm.DB
-	archDB    dbm.DB
 	lastBlock BlockStoreStateJSON
 }
 
 func (st *StoreTool) Init(config *cfg.Viper) error {
-	st.db, st.archDB = BlockStoreDB(config)
+	st.db = BlockStoreDB(config)
 	st.lastBlock = LoadBlockStoreStateJSON(st.db)
 	if st.lastBlock.Height <= 0 {
 		return ErrBlockIsNil
@@ -53,7 +50,7 @@ func (st *StoreTool) Init(config *cfg.Viper) error {
 }
 
 func (st *StoreTool) LoadBlock(height agtypes.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
-	return LoadBlockStore(st.db, st.archDB, height)
+	return LoadBlockStore(st.db, height)
 }
 
 func (st *StoreTool) LastHeight() agtypes.INT {

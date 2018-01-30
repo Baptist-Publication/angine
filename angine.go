@@ -25,12 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
-
 	"github.com/Baptist-Publication/angine/blockchain"
-	"github.com/Baptist-Publication/angine/blockchain/archive"
 	"github.com/Baptist-Publication/angine/blockchain/refuse_list"
 	ac "github.com/Baptist-Publication/angine/config"
 	"github.com/Baptist-Publication/angine/consensus"
@@ -46,6 +41,9 @@ import (
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-events"
 	p2p "github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 const version = "0.6.0"
@@ -65,7 +63,6 @@ type (
 		dbs           map[string]dbm.DB
 		privValidator *agtypes.PrivValidator
 		blockstore    *blockchain.BlockStore
-		dataArchive   *archive.Archive
 		conf          *viper.Viper
 		mempool       *mempool.Mempool
 		consensus     *consensus.ConsensusState
@@ -130,12 +127,10 @@ func Initialize(tune *Tunes, chainID string) {
 func openDBs(conf *viper.Viper) map[string]dbm.DB {
 	dbBackend := conf.GetString("db_backend")
 	dbDir := conf.GetString("db_dir")
-	dbArchiveDir := conf.GetString("db_archive_dir")
 
 	dbs := make(map[string]dbm.DB)
 	dbs["state"] = dbm.NewDB("state", dbBackend, dbDir)
 	dbs["blockstore"] = dbm.NewDB("blockstore", dbBackend, dbDir)
-	dbs["archive"] = dbm.NewDB("blockstore", dbBackend, dbArchiveDir)
 
 	return dbs
 }
@@ -221,14 +216,12 @@ func NewAngine(lgr *zap.Logger, tune *Tunes) (angine *Angine) {
 	} else if tune.Runtime == "" {
 		tune.Runtime = conf.GetString("runtime")
 	}
-	dataArchive := archive.NewArchive(dbBackend, dbDir, conf.GetInt64("threshold_blocks"))
 	angine = &Angine{
 		Tune: tune,
 
-		dbs:         dbs,
-		tune:        tune,
-		dataArchive: dataArchive,
-		conf:        conf,
+		dbs:  dbs,
+		tune: tune,
+		conf: conf,
 
 		p2pSwitch:     p2psw,
 		eventSwitch:   &eventSwitch,
@@ -280,9 +273,9 @@ func (ang *Angine) assembleStateMachine(stateM *state.State) {
 	fastSync := fastSyncable(conf, ang.privValidator.GetAddress(), stateM.Validators)
 	stateM.SetLogger(ang.logger)
 
-	blockStore := blockchain.NewBlockStore(ang.dbs["blockstore"], ang.dbs["archive"])
+	blockStore := blockchain.NewBlockStore(ang.dbs["blockstore"])
 	_, stateLastHeight, _ := stateM.GetLastBlockInfo()
-	bcReactor := blockchain.NewBlockchainReactor(ang.logger, conf, stateLastHeight, blockStore, fastSync, ang.dataArchive)
+	bcReactor := blockchain.NewBlockchainReactor(ang.logger, conf, stateLastHeight, blockStore, fastSync)
 	mem := mempool.NewMempool(ang.logger, conf)
 	memReactor := mempool.NewMempoolReactor(ang.logger, conf, mem)
 
@@ -469,7 +462,6 @@ func (ang *Angine) Destroy() {
 	}
 
 	ang.refuseList.Stop()
-	ang.dataArchive.Close()
 	closeDBs(ang)
 }
 

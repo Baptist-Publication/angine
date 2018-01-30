@@ -99,10 +99,6 @@ type ResultUnconfirmedTxs struct {
 	Txs []Tx `json:"txs"`
 }
 
-type ResultNumArchivedBlocks struct {
-	Num INT `json:"num"`
-}
-
 type ResultInfo struct {
 	Data             string `json:"data"`
 	Version          string `json:"version"`
@@ -162,11 +158,10 @@ type ResultNonEmptyHeights struct {
 
 const (
 	// 0x0 bytes are for the blockchain
-	ResultTypeGenesis           = byte(0x01)
-	ResultTypeBlockchainInfo    = byte(0x02)
-	ResultTypeBlock             = byte(0x03)
-	ResultTypeNonEmptyHeights   = byte(0x04)
-	ResultTypeNumArchivedBlocks = byte(0x05)
+	ResultTypeGenesis         = byte(0x01)
+	ResultTypeBlockchainInfo  = byte(0x02)
+	ResultTypeBlock           = byte(0x03)
+	ResultTypeNonEmptyHeights = byte(0x04)
 
 	// 0x2 bytes are for the network
 	ResultTypeStatus    = byte(0x20)
@@ -228,7 +223,6 @@ var _ = wire.RegisterInterface(
 	wire.ConcreteType{&ResultBroadcastTxCommit{}, ResultTypeBroadcastTxCommit},
 	wire.ConcreteType{&ResultRequestSpecialOP{}, ResultTypeRequestSpecialOP},
 	wire.ConcreteType{&ResultUnconfirmedTxs{}, ResultTypeUnconfirmedTxs},
-	wire.ConcreteType{&ResultNumArchivedBlocks{}, ResultTypeNumArchivedBlocks},
 	wire.ConcreteType{&ResultSubscribe{}, ResultTypeSubscribe},
 	wire.ConcreteType{&ResultUnsubscribe{}, ResultTypeUnsubscribe},
 	wire.ConcreteType{&ResultEvent{}, ResultTypeEvent},

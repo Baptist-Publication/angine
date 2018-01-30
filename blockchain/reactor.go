@@ -19,15 +19,13 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
-
-	"github.com/Baptist-Publication/angine/blockchain/archive"
 	blkpb "github.com/Baptist-Publication/angine/protos/blockchain"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -75,7 +73,7 @@ type BlockchainReactor struct {
 	logger *zap.Logger
 }
 
-func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeight agtypes.INT, store *BlockStore, fastSync bool, arch *archive.Archive) *BlockchainReactor {
+func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeight agtypes.INT, store *BlockStore, fastSync bool) *BlockchainReactor {
 
 	if lastBlockHeight == store.Height()-1 {
 		store.height -= 1 // XXX HACK, make this better

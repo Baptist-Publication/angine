@@ -22,7 +22,6 @@
 		ResultRequestSpecialOP
 		ResultBroadcastTxCommit
 		ResultUnconfirmedTxs
-		ResultNumArchivedBlocks
 		ResultInfo
 		ResultQuery
 		ResultRefuseList
@@ -60,12 +59,11 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Type int32
 
 const (
-	Type_RpcNone              Type = 0
-	Type_RpcGenesis           Type = 1
-	Type_RpcBlockchainInfo    Type = 2
-	Type_RpcBlock             Type = 3
-	Type_RpcNonEmptyHeights   Type = 4
-	Type_RpcNumArchivedBlocks Type = 5
+	Type_RpcNone            Type = 0
+	Type_RpcGenesis         Type = 1
+	Type_RpcBlockchainInfo  Type = 2
+	Type_RpcBlock           Type = 3
+	Type_RpcNonEmptyHeights Type = 4
 	// 0x2 bytes are for the network
 	Type_RpcStatus    Type = 32
 	Type_RpcNetInfo   Type = 33
@@ -105,7 +103,6 @@ var Type_name = map[int32]string{
 	2:   "RpcBlockchainInfo",
 	3:   "RpcBlock",
 	4:   "RpcNonEmptyHeights",
-	5:   "RpcNumArchivedBlocks",
 	32:  "RpcStatus",
 	33:  "RpcNetInfo",
 	34:  "RpcDialSeeds",
@@ -136,7 +133,6 @@ var Type_value = map[string]int32{
 	"RpcBlockchainInfo":         2,
 	"RpcBlock":                  3,
 	"RpcNonEmptyHeights":        4,
-	"RpcNumArchivedBlocks":      5,
 	"RpcStatus":                 32,
 	"RpcNetInfo":                33,
 	"RpcDialSeeds":              34,
@@ -487,22 +483,6 @@ func (m *ResultUnconfirmedTxs) GetTxs() [][]byte {
 	return nil
 }
 
-type ResultNumArchivedBlocks struct {
-	Num int64 `protobuf:"varint,1,opt,name=Num,proto3" json:"Num,omitempty"`
-}
-
-func (m *ResultNumArchivedBlocks) Reset()                    { *m = ResultNumArchivedBlocks{} }
-func (m *ResultNumArchivedBlocks) String() string            { return proto.CompactTextString(m) }
-func (*ResultNumArchivedBlocks) ProtoMessage()               {}
-func (*ResultNumArchivedBlocks) Descriptor() ([]byte, []int) { return fileDescriptorRpc, []int{13} }
-
-func (m *ResultNumArchivedBlocks) GetNum() int64 {
-	if m != nil {
-		return m.Num
-	}
-	return 0
-}
-
 type ResultInfo struct {
 	Data             string `protobuf:"bytes,1,opt,name=Data,proto3" json:"Data,omitempty"`
 	Version          string `protobuf:"bytes,2,opt,name=Version,proto3" json:"Version,omitempty"`
@@ -789,7 +769,6 @@ func init() {
 	proto.RegisterType((*ResultRequestSpecialOP)(nil), "rpc.ResultRequestSpecialOP")
 	proto.RegisterType((*ResultBroadcastTxCommit)(nil), "rpc.ResultBroadcastTxCommit")
 	proto.RegisterType((*ResultUnconfirmedTxs)(nil), "rpc.ResultUnconfirmedTxs")
-	proto.RegisterType((*ResultNumArchivedBlocks)(nil), "rpc.ResultNumArchivedBlocks")
 	proto.RegisterType((*ResultInfo)(nil), "rpc.ResultInfo")
 	proto.RegisterType((*ResultQuery)(nil), "rpc.ResultQuery")
 	proto.RegisterType((*ResultRefuseList)(nil), "rpc.ResultRefuseList")
@@ -1266,29 +1245,6 @@ func (m *ResultUnconfirmedTxs) MarshalTo(dAtA []byte) (int, error) {
 			i = encodeVarintRpc(dAtA, i, uint64(len(b)))
 			i += copy(dAtA[i:], b)
 		}
-	}
-	return i, nil
-}
-
-func (m *ResultNumArchivedBlocks) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ResultNumArchivedBlocks) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Num != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintRpc(dAtA, i, uint64(m.Num))
 	}
 	return i, nil
 }
@@ -1879,15 +1835,6 @@ func (m *ResultUnconfirmedTxs) Size() (n int) {
 			l = len(b)
 			n += 1 + l + sovRpc(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *ResultNumArchivedBlocks) Size() (n int) {
-	var l int
-	_ = l
-	if m.Num != 0 {
-		n += 1 + sovRpc(uint64(m.Num))
 	}
 	return n
 }
@@ -3467,75 +3414,7 @@ func (m *ResultUnconfirmedTxs) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ResultNumArchivedBlocks) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ResultNumArchivedBlocks: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ResultNumArchivedBlocks: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Num", wireType)
-			}
-			m.Num = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Num |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
 
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *ResultInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

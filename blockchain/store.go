@@ -48,7 +48,7 @@ type BlockStore struct {
 	height agtypes.INT
 }
 
-func NewBlockStore(db, archiveDB dbm.DB) *BlockStore {
+func NewBlockStore(db dbm.DB) *BlockStore {
 	bsjson := LoadBlockStoreStateJSON(db)
 	return &BlockStore{
 		height: bsjson.Height,
