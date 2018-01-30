@@ -16,12 +16,7 @@ package blockchain
 
 import (
 	"errors"
-	"io/ioutil"
-	"math"
-	"os"
-	"path/filepath"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/spf13/viper"
@@ -31,11 +26,8 @@ import (
 	blkpb "github.com/Baptist-Publication/angine/protos/blockchain"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	agtypes "github.com/Baptist-Publication/angine/types"
-	"github.com/Baptist-Publication/angine/utils/zip"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
-	"github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
-	"github.com/Baptist-Publication/go-sdk/ti"
 )
 
 const (
@@ -68,7 +60,6 @@ type BlockchainReactor struct {
 
 	config     *viper.Viper
 	store      *BlockStore
-	archive    *archive.Archive
 	pool       *BlockPool
 	fastSync   bool
 	requestsCh chan BlockRequest
@@ -82,8 +73,6 @@ type BlockchainReactor struct {
 	evsw agtypes.EventSwitch
 
 	logger *zap.Logger
-
-	closeArchive chan struct{}
 }
 
 func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeight agtypes.INT, store *BlockStore, fastSync bool, arch *archive.Archive) *BlockchainReactor {
@@ -109,10 +98,7 @@ func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeig
 		fastSync:   fastSync,
 		requestsCh: requestsCh,
 		timeoutsCh: timeoutsCh,
-		archive:    arch,
 		logger:     logger,
-
-		closeArchive: make(chan struct{}, 1),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor(logger, "BlockchainReactor", bcR)
 	return bcR
@@ -131,13 +117,7 @@ func (bcR *BlockchainReactor) SetStateValidator(f ValidatorSetorFunc) {
 }
 
 func (bcR *BlockchainReactor) OnStart() error {
-
 	bcR.BaseReactor.OnStart()
-	if bcR.archive.Threshold > 0 && bcR.archive.Threshold < math.MaxInt64/agtypes.INT(time.Second) {
-		go bcR.BlockArchive()
-	} else {
-		bcR.logger.Warn("invalid archive.Threshold", zap.Int64("archive_threshold", bcR.archive.Threshold))
-	}
 
 	if bcR.fastSync {
 		_, err := bcR.pool.Start()
@@ -152,7 +132,6 @@ func (bcR *BlockchainReactor) OnStart() error {
 func (bcR *BlockchainReactor) OnStop() {
 	bcR.BaseReactor.OnStop()
 	bcR.pool.Stop()
-	bcR.closeArchive <- struct{}{}
 }
 
 // Implements Reactor
@@ -194,16 +173,7 @@ func (bcR *BlockchainReactor) Receive(chID byte, src *p2p.Peer, msgBytes []byte)
 	switch msg := msg.(type) {
 	case *blkpb.BlockRequestMessage:
 		// Got a request for a block. Respond with block if we have it.
-		var block *agtypes.BlockCache
-		height := msg.Height
-		if height > bcR.store.OriginHeight() {
-			block = bcR.store.LoadBlock(msg.Height)
-		} else {
-			block, err = bcR.loadArchiveBlock(msg.Height)
-			if err != nil {
-				bcR.logger.Error(" bcR.loadArchiveBlock failed", zap.String("error", err.Error()))
-			}
-		}
+		block := bcR.store.LoadBlock(msg.Height)
 		if block != nil {
 			queued := src.TrySendBytes(BlockchainChannel,
 				blkpb.MarshalDataToBlkMsg(&blkpb.BlockResponseMessage{
@@ -245,35 +215,6 @@ func (bcR *BlockchainReactor) Receive(chID byte, src *p2p.Peer, msgBytes []byte)
 	default:
 		bcR.logger.Warn(Fmt("Unknown message type %v", reflect.TypeOf(msg)))
 	}
-}
-
-func (bcR *BlockchainReactor) loadArchiveBlock(height agtypes.INT) (block *agtypes.BlockCache, err error) {
-
-	fileHash := string(bcR.archive.QueryFileHash(height))
-	archiveDir := bcR.config.GetString("db_archive_dir")
-	tiClient := ti.NewTiCapsuleClient(
-		bcR.config.GetString("ti_endpoint"),
-		bcR.config.GetString("ti_key"),
-		bcR.config.GetString("ti_secret"),
-	)
-	_, err = os.Stat(filepath.Join(archiveDir, fileHash+".zip"))
-	if err != nil {
-		err = tiClient.DownloadFile(fileHash, filepath.Join(archiveDir, fileHash+".zip"))
-		if err != nil {
-			return
-		} else {
-			err = zip.Decompress(filepath.Join(archiveDir, fileHash+".zip"), filepath.Join(archiveDir, fileHash+".db"))
-			if err != nil {
-				return
-			}
-		}
-	}
-
-	archiveDB := db.NewDB(fileHash, bcR.config.GetString("db_backend"), archiveDir)
-	defer archiveDB.Close()
-	newStore := NewBlockStore(archiveDB, nil)
-	block = newStore.LoadBlock(height)
-	return
 }
 
 // Handle messages from the poolReactor telling the reactor what to do.
@@ -353,76 +294,6 @@ FOR_LOOP:
 		case <-bcR.Quit:
 			break FOR_LOOP
 		}
-	}
-}
-
-func (bcR *BlockchainReactor) BlockArchive() {
-	// geneate next block time > 1s
-	//originHeight = (actual originHeight) -1
-	clearDBTicker := time.NewTicker(time.Duration(bcR.archive.Threshold) * time.Second)
-	archiveDir := bcR.config.GetString("db_archive_dir")
-LOOP:
-	for range clearDBTicker.C {
-		select {
-		case <-bcR.closeArchive:
-			break LOOP
-		default:
-			fs, err := ioutil.ReadDir(archiveDir)
-			if err != nil {
-				bcR.logger.Error("ioutil.ReadDir failed", zap.String("error", err.Error()))
-				continue
-			}
-			for _, file := range fs {
-				if file.IsDir() {
-					if file.Name() != "blockstore.db" {
-						os.RemoveAll(filepath.Join(archiveDir, file.Name()))
-					}
-				} else {
-					if file.Name() != "blockstore.db.zip" {
-						os.Remove(filepath.Join(archiveDir, file.Name()))
-					}
-				}
-			}
-			originHeight := bcR.store.OriginHeight()
-			if bcR.store.Height()-originHeight > bcR.archive.Threshold {
-				for i := originHeight + 1; i <= originHeight+bcR.archive.Threshold; i++ {
-					block := bcR.store.LoadBlock(i)
-					partSet := block.MakePartSet(bcR.config.GetInt64("block_part_size"))
-					seenCommit := bcR.store.LoadSeenCommit(i)
-					bcR.store.SaveBlockToArchive(i, block, partSet, seenCommit)
-				}
-				storeDir := filepath.Join(archiveDir, "blockstore.db")
-				err := zip.CompressDir(storeDir)
-				if err != nil {
-					bcR.logger.Error("zip.CompressDir failed", zap.String("error", err.Error()))
-					os.Remove(storeDir + ".zip")
-					continue
-				}
-				tiClient := ti.NewTiCapsuleClient(
-					bcR.config.GetString("ti_endpoint"),
-					bcR.config.GetString("ti_key"),
-					bcR.config.GetString("ti_secret"),
-				)
-
-				result, err := tiClient.Save(storeDir + ".zip")
-				if err != nil {
-					bcR.logger.Warn("tiClient.Save failed", zap.String("error", err.Error()))
-					os.Remove(storeDir + ".zip")
-					continue
-				} else {
-					bcR.logger.Info("tiClient.Save success")
-				}
-				key := strconv.FormatInt(originHeight+1, 10) + "_" + strconv.FormatInt(originHeight+bcR.archive.Threshold, 10)
-				bcR.archive.AddItem(key, result.Hash)
-				bcR.store.SetOriginHeight(originHeight + bcR.archive.Threshold)
-				for i := originHeight + 1; i <= bcR.store.OriginHeight(); i++ {
-					err = bcR.store.DeleteBlock(i)
-					if err != nil {
-						bcR.logger.Error("bcR.store.DeleteBlock("+strconv.FormatInt(i, 10)+")", zap.String("error", err.Error()))
-					}
-				}
-			}
-		} // default
 	}
 }
 

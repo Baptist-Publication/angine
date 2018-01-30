@@ -15,8 +15,10 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sync"
 
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
@@ -40,21 +42,17 @@ the Commit data outside the Block.
 Panics indicate probable corruption in the data
 */
 type BlockStore struct {
-	db        dbm.DB
-	archiveDB dbm.DB
+	db dbm.DB
 
-	mtx          sync.RWMutex
-	height       agtypes.INT
-	originHeight agtypes.INT
+	mtx    sync.RWMutex
+	height agtypes.INT
 }
 
 func NewBlockStore(db, archiveDB dbm.DB) *BlockStore {
 	bsjson := LoadBlockStoreStateJSON(db)
 	return &BlockStore{
-		height:       bsjson.Height,
-		originHeight: bsjson.OriginHeight,
-		db:           db,
-		archiveDB:    archiveDB,
+		height: bsjson.Height,
+		db:     db,
 	}
 }
 
@@ -65,12 +63,12 @@ func (bs *BlockStore) Height() agtypes.INT {
 	return bs.height
 }
 
-func (bs *BlockStore) OriginHeight() agtypes.INT {
-	return bs.originHeight //unnecessary use mtx
-}
-
-func (bs *BlockStore) SetOriginHeight(height agtypes.INT) {
-	bs.originHeight = height
+func (bs *BlockStore) GetReader(key []byte) io.Reader {
+	bytez := bs.db.Get(key)
+	if bytez == nil {
+		return nil
+	}
+	return bytes.NewReader(bytez)
 }
 
 func (bs *BlockStore) LoadBlock(height agtypes.INT) *agtypes.BlockCache {
@@ -111,18 +109,8 @@ func (bs *BlockStore) LoadBlockMeta(height agtypes.INT) *pbtypes.BlockMeta {
 	return bs.loadBlockMeta(height, false)
 }
 
-func (bs *BlockStore) getData(key []byte, archv bool) []byte {
-	if archv {
-		return bs.archiveDB.Get(key)
-	}
-	return bs.db.Get(key)
-}
-
 func (bs *BlockStore) loadBlockMeta(height agtypes.INT, archv bool) *pbtypes.BlockMeta {
-	metaBys := bs.getData(calcBlockMetaKey(height), archv)
-	if len(metaBys) == 0 {
-		return nil
-	}
+	metaBys := bs.db.Get(calcBlockMetaKey(height))
 	var meta pbtypes.BlockMeta
 	err := agtypes.UnmarshalData(metaBys, &meta)
 	if err != nil {
@@ -208,7 +196,7 @@ func (bs *BlockStore) SaveBlock(block *agtypes.BlockCache, blockParts *agtypes.P
 	// fmt.Println("======seen commit bytes:", len(seenCommitBytes))
 
 	// Save new BlockStoreStateJSON descriptor
-	BlockStoreStateJSON{Height: height, OriginHeight: bs.originHeight}.Save(bs.db)
+	BlockStoreStateJSON{Height: height}.Save(bs.db)
 
 	// Done!
 	bs.mtx.Lock()
@@ -217,63 +205,6 @@ func (bs *BlockStore) SaveBlock(block *agtypes.BlockCache, blockParts *agtypes.P
 
 	// Flush
 	bs.db.SetSync(nil, nil)
-}
-
-func (bs *BlockStore) SaveBlockToArchive(height agtypes.INT, block *agtypes.BlockCache, blockParts *agtypes.PartSet, seenCommit *agtypes.CommitCache) {
-	if !blockParts.IsComplete() {
-		PanicSanity(Fmt("BlockStore can only save complete block part sets"))
-	}
-	meta := agtypes.NewBlockMeta(block, blockParts)
-	metaBytes, _ := agtypes.MarshalData(meta)
-	bs.archiveDB.Set(calcBlockMetaKey(height), metaBytes)
-
-	// Save block parts
-	for i := 0; i < int(blockParts.Total()); i++ {
-		bs.savePartToArchive(height, i, blockParts.GetPart(i))
-	}
-
-	// Save block commit (duplicate and separate from the Block)
-	blockCommitBytes, _ := agtypes.MarshalData(block.LastCommit)
-	bs.archiveDB.Set(calcBlockCommitKey(height-1), blockCommitBytes)
-
-	// Save seen commit (seen +2/3 precommits for block)
-	// NOTE: we can delete this at a later height
-	seenCommitBytes, _ := agtypes.MarshalData(seenCommit.Commit)
-	bs.archiveDB.Set(calcSeenCommitKey(height), seenCommitBytes)
-}
-
-func (bs *BlockStore) DeleteBlock(height agtypes.INT) (err error) {
-	bytez := bs.db.Get(calcBlockCommitKey(height))
-	if bytez == nil {
-		err = ErrNotFound
-		return
-	}
-	bs.db.Delete(calcBlockCommitKey(height - 1))
-	bs.db.Delete(calcSeenCommitKey(height))
-	meta := bs.LoadBlockMeta(height)
-	if err != nil {
-		PanicCrisis(Fmt("Error reading block meta: %v", err))
-	}
-	metaTotal := int(meta.GetPartsHeader().GetTotal())
-	for i := 0; i < metaTotal; i++ {
-		bs.db.Delete(calcBlockPartKey(height, i))
-	}
-	bs.db.Delete(calcBlockMetaKey(height))
-	bs.db.DeleteSync(nil)
-
-	bs.archiveDB.Delete(calcBlockCommitKey(height - 1))
-	bs.archiveDB.Delete(calcSeenCommitKey(height))
-	archvMeta := bs.loadBlockMeta(height, true)
-	if archvMeta == nil {
-		PanicCrisis(Fmt("Error reading archiveDB block meta: %v", height))
-	}
-	aMetaTotal := int(archvMeta.GetPartsHeader().GetTotal())
-	for i := 0; i < aMetaTotal; i++ {
-		bs.archiveDB.Delete(calcBlockPartKey(height, i))
-	}
-	bs.archiveDB.Delete(calcBlockMetaKey(height))
-	bs.archiveDB.DeleteSync(nil)
-	return
 }
 
 func (bs *BlockStore) saveBlockPart(height agtypes.INT, index int, part *pbtypes.Part) {
@@ -286,11 +217,6 @@ func (bs *BlockStore) saveBlockPart(height agtypes.INT, index int, part *pbtypes
 	}
 	bs.db.Set(calcBlockPartKey(height, index), partBytes)
 	// fmt.Println("====block part:", len(partBytes))
-}
-
-func (bs *BlockStore) savePartToArchive(height agtypes.INT, index int, part *pbtypes.Part) {
-	partBytes, _ := agtypes.MarshalData(part)
-	bs.archiveDB.Set(calcBlockPartKey(height, index), partBytes)
 }
 
 //-----------------------------------------------------------------------------

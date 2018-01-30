@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -41,14 +40,12 @@ import (
 	"github.com/Baptist-Publication/angine/state"
 	"github.com/Baptist-Publication/angine/trace"
 	agtypes "github.com/Baptist-Publication/angine/types"
-	"github.com/Baptist-Publication/angine/utils/zip"
 	"github.com/Baptist-Publication/chorus-module/lib/ed25519"
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	crypto "github.com/Baptist-Publication/chorus-module/lib/go-crypto"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-events"
 	p2p "github.com/Baptist-Publication/chorus-module/lib/go-p2p"
-	"github.com/Baptist-Publication/go-sdk/ti"
 )
 
 const version = "0.6.0"
@@ -461,10 +458,6 @@ func (ang *Angine) Height() agtypes.INT {
 	return ang.blockstore.Height()
 }
 
-func (ang *Angine) OriginHeight() agtypes.INT {
-	return ang.blockstore.OriginHeight()
-}
-
 func (ang *Angine) NonEmptyHeight() agtypes.INT {
 	return ang.stateMachine.LastNonEmptyHeight
 }
@@ -530,18 +523,7 @@ func (ang *Angine) GetBlockMeta(height agtypes.INT) (meta *pbtypes.BlockMeta, er
 		err = fmt.Errorf("height(%d) must be less than the current blockchain height(%d)", height, ang.Height())
 		return
 	}
-	if height > ang.blockstore.OriginHeight() {
-		meta = ang.blockstore.LoadBlockMeta(height)
-	} else {
-		archiveDB, errN := ang.newArchiveDB(height)
-		if errN != nil {
-			err = errN
-			return
-		}
-		defer archiveDB.Close()
-		newStore := blockchain.NewBlockStore(archiveDB, nil)
-		meta = newStore.LoadBlockMeta(height)
-	}
+	meta = ang.blockstore.LoadBlockMeta(height)
 	return
 }
 
@@ -555,44 +537,8 @@ func (ang *Angine) GetBlock(height agtypes.INT) (block *agtypes.BlockCache, meta
 		err = fmt.Errorf("height(%d) must be less than the current blockchain height(%d)", height, ang.Height())
 		return
 	}
-	if height > ang.blockstore.OriginHeight() {
-		block = ang.blockstore.LoadBlock(height)
-		meta = ang.blockstore.LoadBlockMeta(height)
-	} else {
-		archiveDB, errN := ang.newArchiveDB(height)
-		if errN != nil {
-			err = errN
-			return
-		}
-		defer archiveDB.Close()
-		newStore := blockchain.NewBlockStore(archiveDB, nil)
-		block = newStore.LoadBlock(height)
-		meta = newStore.LoadBlockMeta(height)
-	}
-	return
-}
-
-func (ang *Angine) newArchiveDB(height agtypes.INT) (archiveDB dbm.DB, err error) {
-	fileHash := string(ang.dataArchive.QueryFileHash(height))
-	archiveDir := ang.conf.GetString("db_archive_dir")
-	tiClient := ti.NewTiCapsuleClient(
-		ang.conf.GetString("ti_endpoint"),
-		ang.conf.GetString("ti_key"),
-		ang.conf.GetString("ti_secret"),
-	)
-	_, err = os.Stat(filepath.Join(archiveDir, fileHash+".zip"))
-	if err != nil {
-		err = tiClient.DownloadFile(fileHash, filepath.Join(archiveDir, fileHash+".zip"))
-		if err != nil {
-			return
-		}
-		err = zip.Decompress(filepath.Join(archiveDir, fileHash+".zip"), filepath.Join(archiveDir, fileHash+".db"))
-		if err != nil {
-			return
-		}
-	}
-
-	archiveDB = dbm.NewDB(fileHash, ang.conf.GetString("db_backend"), archiveDir)
+	block = ang.blockstore.LoadBlock(height)
+	meta = ang.blockstore.LoadBlockMeta(height)
 	return
 }
 
