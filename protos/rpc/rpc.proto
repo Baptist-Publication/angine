@@ -71,10 +71,6 @@ message ResultUnconfirmedTxs{
 	repeated bytes Txs = 2;
 }
 
-message ResultNumArchivedBlocks{
-	int64 Num = 1;
-}
-
 message ResultInfo{
 	string Data = 1;
 	string Version = 2;
@@ -139,7 +135,6 @@ enum Type{
 	RpcBlockchainInfo    = 0x02;
 	RpcBlock             = 0x03;
 	RpcNonEmptyHeights   = 0x04;
-	RpcNumArchivedBlocks = 0x05;
 
 	// 0x2 bytes are for the network                        
 	RpcStatus    = 0x20;                        
