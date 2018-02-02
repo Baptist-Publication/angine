@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"github.com/Baptist-Publication/angine/types"
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
 )
 
@@ -50,49 +51,101 @@ func RuntimeDir(root string) string {
 	if root != "" {
 		return root
 	}
+	runtimePath := os.Getenv(RUNTIME_ENV)
 	if len(runtimePath) == 0 {
-		runtimePath = os.Getenv(RUNTIME_ENV)
-		if len(runtimePath) == 0 {
-			runtimePath, _ = homedir.Dir()
-		}
-		runtimePath = path.Join(runtimePath, DEFAULT_RUNTIME)
+		runtimePath, _ = homedir.Dir()
 	}
-	return runtimePath
+	return path.Join(runtimePath, DEFAULT_RUNTIME)
 }
 
-// InitRuntime makes all the necessary directorys for angine's runtime
+// InitRuntimeDir makes all the necessary directorys for angine's runtime
 // and generate the config template for you if it is not there already
-func InitRuntime(root string) {
-	cmn.EnsureDir(root, 0700)
-	cmn.EnsureDir(path.Join(root, DATADIR), 0700)
-	configFilePath := path.Join(root, CONFIGFILE)
-	if !cmn.FileExists(configFilePath) {
-		cmn.MustWriteFile(configFilePath, []byte(parseConfigTpl("anonymous", root)), 0644)
+func InitRuntime(root string, chainId string) error {
+	root = RuntimeDir(root)
+
+	// ~/.angine
+	err := cmn.EnsureDir(root, 0700)
+	if err != nil {
+		return err
 	}
+
+	// ~/.angine/data
+	_ = cmn.EnsureDir(path.Join(root, DATADIR), 0700)
+
+	configFilePath := path.Join(root, CONFIGFILE)
+	if cmn.FileExists(configFilePath) {
+		return errors.New("config.toml already exists!")
+	}
+
+	err = cmn.WriteFile(configFilePath, []byte(parseConfigTpl("anonymous", root)), 0644)
+	if err != nil {
+		return err
+	}
+
+	conf := viper.New()
+	SetDefaults(root, conf)
+	conf.AutomaticEnv()
+
+	// priv_validator.json
+	priv := genPrivFile(conf.GetString("priv_validator_file"))
+	gvs := []types.GenesisValidator{types.GenesisValidator{
+		PubKey: priv.PubKey,
+		Amount: 100,
+		IsCA:   true,
+	}}
+
+	// genesis.json
+	_, err = genGenesiFile(conf.GetString("genesis_file"), chainId, gvs)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetConfig returns a ready-to-go config instance with all defaults filled in
 func GetConfig(root string) (conf *viper.Viper) {
-	var err error
-	runtime := RuntimeDir(root)
-	InitRuntime(runtime)
+	runtimeDir := RuntimeDir(root)
 
 	conf = viper.New()
+
 	conf.SetEnvPrefix("ANGINE")
-	conf.SetConfigFile(path.Join(runtime, CONFIGFILE))
-	if err = conf.ReadInConfig(); err != nil {
-		cmn.Exit(errors.Wrap(err, "angine configuration").Error())
-	}
-	if conf.IsSet("chain_id") {
-		cmn.Exit("Cannot set 'chain_id' via config.toml")
-	}
-	if conf.IsSet("revision_file") {
-		cmn.Exit("Cannot set 'revision_file' via config.toml. It must match what's in the Makefile")
+	conf.SetConfigFile(path.Join(runtimeDir, CONFIGFILE))
+	SetDefaults(runtimeDir, conf)
+
+	if err := conf.ReadInConfig(); err != nil {
+		cmn.PanicSanity(err)
 	}
 
-	SetDefaults(runtime, conf)
+	if conf.IsSet("chain_id") {
+		err := errors.New("Cannot set 'chain_id' via config.toml")
+		cmn.PanicSanity(err)
+	}
+	// if conf.IsSet("revision_file") {
+	// 	cmn.PanicSanity(errors.New("Cannot set 'revision_file' via config.toml. It must match what's in the Makefile"))
+	// }
 
 	return
+}
+
+func genPrivFile(path string) *types.PrivValidator {
+	privValidator := types.GenPrivValidator(nil)
+	privValidator.SetFile(path)
+	privValidator.Save()
+	return privValidator
+}
+
+func genGenesiFile(path string, chainId string, gVals []types.GenesisValidator) (*types.GenesisDoc, error) {
+	if len(chainId) == 0 {
+		// chainID = cmn.Fmt("annchain-%v", cmn.RandStr(6))
+		chainId = "chorus"
+	}
+	genDoc := &types.GenesisDoc{
+		ChainID: chainId,
+		Plugins: "specialop",
+	}
+	genDoc.Validators = gVals
+	return genDoc, genDoc.SaveAs(path)
 }
 
 // SetDefaults sets all the default configs for angine
@@ -101,7 +154,7 @@ func SetDefaults(runtime string, conf *viper.Viper) *viper.Viper {
 	conf.SetDefault("runtime", runtime)
 	conf.SetDefault("genesis_file", path.Join(runtime, "genesis.json"))
 	conf.SetDefault("moniker", "anonymous")
-	conf.SetDefault("p2p_laddr", "tcp://0.0.0.0:46656")
+	// conf.SetDefault("p2p_laddr", "tcp://0.0.0.0:46656")
 	conf.SetDefault("seeds", "")
 	conf.SetDefault("auth_by_ca", false)              // auth by ca general switch
 	conf.SetDefault("non_validator_auth_by_ca", true) // whether non-validator nodes need auth by ca, only effective when auth_by_ca is true

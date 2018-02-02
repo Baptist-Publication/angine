@@ -16,18 +16,17 @@ package config
 
 const CONFIGTPL = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
+environment = "production"                # log mode, e.g. "development"/"production"
+p2p_laddr = "0.0.0.0:46656"               # p2p port that this node is listening
+rpc_laddr = "0.0.0.0:46657"               # rpc port this node is exposing
+event_laddr = "0.0.0.0:46658"             # chorus uses a exposed port for events function
+log_path = ""                             #
+seeds = ""                                # peers to connect when the node is starting
+signbyCA = ""                             # you must require a signature from a valid CA if the blockchain is a permissioned blockchain
+enable_incentive = true                   # to enable block coinbase transaction in angine
 
-environment = "development"
 db_backend = "leveldb"
 moniker = "__MONIKER__"
 
-# auth by ca general switch
 auth_by_ca = false
-
-# auth signature from CA
-signbyCA = ""
-
-log_path = ""
-
-
 `
