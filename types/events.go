@@ -24,6 +24,7 @@ import (
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-events"
 	"github.com/Baptist-Publication/chorus-module/lib/go-wire"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 // Functions to generate eventId strings
@@ -131,9 +132,9 @@ type EventDataRoundState struct {
 }
 
 type EventDataRoundStateJson struct {
-	Height INT    `json:"height"`
-	Round  INT    `json:"round"`
-	Step   string `json:"step"`
+	Height def.INT `json:"height"`
+	Round  def.INT `json:"round"`
+	Step   string  `json:"step"`
 
 	// private, not exposed to websockets
 	RoundState interface{} `json:"-"`
@@ -162,39 +163,39 @@ type EventDataSwitchToConsensus struct {
 }
 
 type EventDataHookNewRound struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	ResCh  chan NewRoundResult
 }
 type EventDataHookPropose struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	Block  *BlockCache
 }
 type EventDataHookPrevote struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	Block  *BlockCache
 }
 type EventDataHookPrecommit struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	Block  *BlockCache
 }
 type EventDataHookCommit struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	Block  *BlockCache
 	ResCh  chan CommitResult
 }
 type EventDataHookExecute struct {
-	Height INT
-	Round  INT
+	Height def.INT
+	Round  def.INT
 	Block  *BlockCache
 	ResCh  chan ExecuteResult
 }
 
-func NewEventDataHookNewRound(height, round INT) EventDataHookNewRound {
+func NewEventDataHookNewRound(height, round def.INT) EventDataHookNewRound {
 	return EventDataHookNewRound{
 		Height: height,
 		Round:  round,
@@ -202,7 +203,7 @@ func NewEventDataHookNewRound(height, round INT) EventDataHookNewRound {
 	}
 }
 
-func NewEventDataHookExecute(height, round INT, block *BlockCache) EventDataHookExecute {
+func NewEventDataHookExecute(height, round def.INT, block *BlockCache) EventDataHookExecute {
 	return EventDataHookExecute{
 		Height: height,
 		Round:  round,
@@ -211,7 +212,7 @@ func NewEventDataHookExecute(height, round INT, block *BlockCache) EventDataHook
 	}
 }
 
-func NewEventDataHookCommit(height, round INT, block *BlockCache) EventDataHookCommit {
+func NewEventDataHookCommit(height, round def.INT, block *BlockCache) EventDataHookCommit {
 	return EventDataHookCommit{
 		Height: height,
 		Round:  round,

@@ -25,6 +25,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 //--------------------------------------------------
@@ -32,7 +33,7 @@ import (
 
 // Execute the block to mutate State.
 // Validates block and then executes Data.Txs in the block.
-func (s *State) ExecBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, blockPartsHeader *pbtypes.PartSetHeader, round agtypes.INT) error {
+func (s *State) ExecBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, blockPartsHeader *pbtypes.PartSetHeader, round def.INT) error {
 	// Validate the block.
 	if err := s.validateBlock(block); err != nil {
 		return ErrInvalidBlock(err)
@@ -64,11 +65,11 @@ func (s *State) ExecBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockC
 	return nil
 }
 
-func (s *State) getNextValSet(currnet *agtypes.ValidatorSet, height, round agtypes.INT) *agtypes.ValidatorSet {
+func (s *State) getNextValSet(currnet *agtypes.ValidatorSet, height, round def.INT) *agtypes.ValidatorSet {
 	var valSet *agtypes.ValidatorSet
 
 	// we re-elect every 500 blocks
-	if s.valSetLoader != nil && height%500 == 0 {
+	if s.valSetLoader != nil && height%def.ElectionFrequency == 0 {
 		valSet = s.valSetLoader(height, round, 21)
 		if len(valSet.Validators) == 0 {
 			panic("Election happened, but no validator is elected")
@@ -94,7 +95,7 @@ func (s *State) getNextValSet(currnet *agtypes.ValidatorSet, height, round agtyp
 	return valSet
 }
 
-func (s *State) execBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, round agtypes.INT) ([]*agtypes.ValidatorAttr, error) {
+func (s *State) execBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, round def.INT) ([]*agtypes.ValidatorAttr, error) {
 	// Run Txs of block
 	bheader := block.Header
 	ed := agtypes.NewEventDataHookExecute(bheader.Height, round, block)
@@ -188,7 +189,7 @@ func (s *State) validateBlock(block *agtypes.BlockCache) error {
 }
 
 // ApplyBlock executes the block, then commits and updates the mempool atomically
-func (s *State) ApplyBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, partsHeader *pbtypes.PartSetHeader, mempool agtypes.IMempool, round agtypes.INT) error {
+func (s *State) ApplyBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, partsHeader *pbtypes.PartSetHeader, mempool agtypes.IMempool, round def.INT) error {
 	// Run the block on the State:
 	// + update validator sets
 	// + run txs on the proxyAppConn
@@ -208,7 +209,7 @@ func (s *State) ApplyBlock(eventSwitch agtypes.EventSwitch, block *agtypes.Block
 // mempool must be locked during commit and update
 // because state is typically reset on Commit and old txs must be replayed
 // against committed state before new txs are run in the mempool, lest they be invalid
-func (s *State) CommitStateUpdateMempool(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, mempool agtypes.IMempool, round agtypes.INT) error {
+func (s *State) CommitStateUpdateMempool(eventSwitch agtypes.EventSwitch, block *agtypes.BlockCache, mempool agtypes.IMempool, round def.INT) error {
 	bheader := block.GetHeader()
 	mempool.Update(bheader.Height, append(agtypes.BytesToTxSlc(block.GetData().Txs),
 		agtypes.BytesToTxSlc(block.GetData().ExTxs)...))
@@ -225,9 +226,9 @@ func (s *State) CommitStateUpdateMempool(eventSwitch agtypes.EventSwitch, block 
 
 // TODO: Should we move blockchain/store.go to its own package?
 type BlockStore interface {
-	Height() agtypes.INT
-	LoadBlock(height agtypes.INT) *agtypes.BlockCache
-	LoadBlockMeta(height agtypes.INT) *pbtypes.BlockMeta
+	Height() def.INT
+	LoadBlock(height def.INT) *agtypes.BlockCache
+	LoadBlockMeta(height def.INT) *pbtypes.BlockMeta
 }
 
 type Handshaker struct {

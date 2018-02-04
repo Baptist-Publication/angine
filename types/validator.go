@@ -24,6 +24,7 @@ import (
 
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 // Volatile state for each Validator
@@ -32,8 +33,8 @@ import (
 type Validator struct {
 	Address     []byte          `json:"address"`
 	PubKey      crypto.StPubKey `json:"pub_key"`
-	VotingPower INT             `json:"voting_power"`
-	Accum       INT             `json:"accum"`
+	VotingPower def.INT         `json:"voting_power"`
+	Accum       def.INT         `json:"accum"`
 	IsCA        bool            `json:"is_ca"`
 }
 
@@ -74,7 +75,7 @@ func (m *ValidatorAttr) GetIsCA() bool {
 	return false
 }
 
-func NewValidator(pubKey crypto.PubKey, votingPower INT, isCA bool) *Validator {
+func NewValidator(pubKey crypto.PubKey, votingPower def.INT, isCA bool) *Validator {
 	return &Validator{
 		Address:     pubKey.Address(),
 		PubKey:      crypto.StPubKey{pubKey},
@@ -147,13 +148,13 @@ func (v *Validator) Hash() []byte {
 //--------------------------------------------------------------------------------
 // For testing...
 
-func RandValidator(logger *zap.Logger, randPower bool, minPower INT) (*Validator, *PrivValidator) {
+func RandValidator(logger *zap.Logger, randPower bool, minPower def.INT) (*Validator, *PrivValidator) {
 	privVal := GenPrivValidator(logger)
 	_, tempFilePath := Tempfile("priv_validator_")
 	privVal.SetFile(tempFilePath)
 	votePower := minPower
 	if randPower {
-		votePower += INT(RandUint32())
+		votePower += def.INT(RandUint32())
 	}
 	val := NewValidator(privVal.GetPubKey(), votePower, true)
 	return val, privVal

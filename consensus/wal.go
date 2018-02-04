@@ -25,6 +25,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	auto "github.com/Baptist-Publication/chorus-module/lib/go-autofile"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 //--------------------------------------------------------
@@ -207,7 +208,7 @@ func (wal *WAL) Save(wmsg WALMessage) {
 	}
 }
 
-func (wal *WAL) writeHeight(height agtypes.INT) {
+func (wal *WAL) writeHeight(height def.INT) {
 	wal.group.WriteLine(Fmt("#HEIGHT: %v", height))
 
 	// TODO: only flush when necessary

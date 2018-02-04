@@ -24,6 +24,7 @@ import (
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-merkle"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const MaxBlockSize = 22020096 // 21MB TODO make it configurable
@@ -41,8 +42,8 @@ type BlockCache struct {
 }
 
 // TODO: version
-func MakeBlock(maker, coinbase []byte, height INT, chainID string, alltxs []Tx, commit *CommitCache,
-	prevBlockID pbtypes.BlockID, valHash []byte, vset *ValidatorSet, appHash, receiptsHash []byte, partSize, nonEmptyHeight INT) (*BlockCache, *PartSet) {
+func MakeBlock(maker, coinbase []byte, height def.INT, chainID string, alltxs []Tx, commit *CommitCache,
+	prevBlockID pbtypes.BlockID, valHash []byte, vset *ValidatorSet, appHash, receiptsHash []byte, partSize, nonEmptyHeight def.INT) (*BlockCache, *PartSet) {
 	extxs := []Tx{}
 	txs := []Tx{}
 	if len(coinbase) == 0 {
@@ -60,7 +61,7 @@ func MakeBlock(maker, coinbase []byte, height INT, chainID string, alltxs []Tx, 
 			ChainID:            chainID,
 			Height:             height,
 			Time:               time.Now().UnixNano(),
-			NumTxs:             INT(len(alltxs)),
+			NumTxs:             def.INT(len(alltxs)),
 			Maker:              maker,
 			LastBlockID:        &prevBlockID,
 			ValidatorsHash:     valHash,
@@ -119,8 +120,8 @@ func (b *BlockCache) DataCache() *DataCache {
 }
 
 // Basic validation that doesn't involve state data.
-func (b *BlockCache) ValidateBasic(chainID string, lastBlockHeight INT, lastBlockID pbtypes.BlockID,
-	lastBlockTime INT, appHash, receiptsHash []byte, nonEmptyHeight INT) error {
+func (b *BlockCache) ValidateBasic(chainID string, lastBlockHeight def.INT, lastBlockID pbtypes.BlockID,
+	lastBlockTime def.INT, appHash, receiptsHash []byte, nonEmptyHeight def.INT) error {
 	bheader := b.GetHeader()
 	bdata := b.datac
 	bcommit := b.commitc
@@ -140,7 +141,7 @@ func (b *BlockCache) ValidateBasic(chainID string, lastBlockHeight INT, lastBloc
 			return errors.New("Invalid Block.Header.Time")
 		}
 	*/
-	if bheader.NumTxs != INT(len(bdata.Txs)+len(bdata.ExTxs)) {
+	if bheader.NumTxs != def.INT(len(bdata.Txs)+len(bdata.ExTxs)) {
 		return errors.New(Fmt("(%s) Wrong Block.Header.NumTxs. Expected %v, got %v", chainID, len(bdata.Txs)+len(bdata.ExTxs), bheader.NumTxs))
 	}
 	if !bheader.LastBlockID.Equals(&lastBlockID) {
@@ -188,7 +189,7 @@ func (b *BlockCache) Hash() []byte {
 	return b.Header.Hash()
 }
 
-func (b *BlockCache) MakePartSet(partSize INT) *PartSet {
+func (b *BlockCache) MakePartSet(partSize def.INT) *PartSet {
 	bys, _ := MarshalData(b.Block)
 	return NewPartSetFromData(bys, partSize)
 }
@@ -269,14 +270,14 @@ func (commit *CommitCache) FirstPrecommit() *pbtypes.Vote {
 	return nil
 }
 
-func (commit *CommitCache) Height() INT {
+func (commit *CommitCache) Height() def.INT {
 	if len(commit.Precommits) == 0 {
 		return 0
 	}
 	return commit.FirstPrecommit().GetData().GetHeight()
 }
 
-func (commit *CommitCache) Round() INT {
+func (commit *CommitCache) Round() def.INT {
 	if len(commit.Precommits) == 0 {
 		return 0
 	}

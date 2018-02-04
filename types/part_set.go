@@ -25,6 +25,7 @@ import (
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-merkle"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 var (
@@ -88,18 +89,18 @@ func (part *PartCache) StringIndented(indent string) string {
 //-------------------------------------
 
 type PartSet struct {
-	total INT
+	total def.INT
 	hash  []byte
 
 	mtx           sync.Mutex
 	parts         []*PartCache
 	partsBitArray *BitArray
-	count         INT
+	count         def.INT
 }
 
 // Returns an immutable, full PartSet from the data bytes.
 // The data bytes are split into "partSize" chunks, and merkle tree computed.
-func NewPartSetFromData(data []byte, partSize INT) *PartSet {
+func NewPartSetFromData(data []byte, partSize def.INT) *PartSet {
 	// divide data into 4kb parts.
 	intPartSize := int(partSize)
 	total := (len(data) + intPartSize - 1) / intPartSize
@@ -109,7 +110,7 @@ func NewPartSetFromData(data []byte, partSize INT) *PartSet {
 	for i := 0; i < total; i++ {
 		part := &PartCache{
 			Part: &pbtypes.Part{
-				Index: HINT(i),
+				Index: def.HINT(i),
 				Bytes: data[i*intPartSize : MinInt(len(data), (i+1)*intPartSize)],
 			},
 		}
@@ -123,18 +124,18 @@ func NewPartSetFromData(data []byte, partSize INT) *PartSet {
 		parts[i].init(proofs[i].Aunts)
 	}
 	return &PartSet{
-		total:         INT(total),
+		total:         def.INT(total),
 		hash:          root,
 		parts:         parts,
 		partsBitArray: partsBitArray,
-		count:         INT(total),
+		count:         def.INT(total),
 	}
 }
 
 // Returns an empty PartSet ready to be populated.
 func NewPartSetFromHeader(header *pbtypes.PartSetHeader) *PartSet {
 	return &PartSet{
-		total:         INT(header.Total),
+		total:         def.INT(header.Total),
 		hash:          header.Hash,
 		parts:         make([]*PartCache, int(header.Total)),
 		partsBitArray: NewBitArray(int(header.Total)),
@@ -147,7 +148,7 @@ func (ps *PartSet) Header() *pbtypes.PartSetHeader {
 		return &pbtypes.PartSetHeader{}
 	}
 	return &pbtypes.PartSetHeader{
-		Total: HINT(ps.total),
+		Total: def.HINT(ps.total),
 		Hash:  ps.hash,
 	}
 }
@@ -180,14 +181,14 @@ func (ps *PartSet) HashesTo(hash []byte) bool {
 	return bytes.Equal(ps.hash, hash)
 }
 
-func (ps *PartSet) Count() INT {
+func (ps *PartSet) Count() def.INT {
 	if ps == nil {
 		return 0
 	}
 	return ps.count
 }
 
-func (ps *PartSet) Total() INT {
+func (ps *PartSet) Total() def.INT {
 	if ps == nil {
 		return 0
 	}
@@ -200,7 +201,7 @@ func (ps *PartSet) AddPart(part *pbtypes.Part, verify bool) (bool, error) {
 
 	intIndex := int(part.Index)
 	// Invalid part index
-	if INT(intIndex) >= ps.total {
+	if def.INT(intIndex) >= ps.total {
 		return false, ErrPartSetUnexpectedIndex
 	}
 
@@ -242,7 +243,7 @@ func (ps *PartSet) StringShort() string {
 	return fmt.Sprintf("(%v of %v)", ps.Count(), ps.Total())
 }
 
-func (ps *PartSet) AssembleToBlock(partSize INT) *BlockCache {
+func (ps *PartSet) AssembleToBlock(partSize def.INT) *BlockCache {
 	if len(ps.parts) == 0 {
 		return nil
 	}

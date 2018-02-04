@@ -22,10 +22,11 @@ import (
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
 	"github.com/Baptist-Publication/chorus-module/lib/go-rpc/types"
 	"github.com/Baptist-Publication/chorus-module/lib/go-wire"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 type ResultBlockchainInfo struct {
-	LastHeight INT                  `json:"last_height"`
+	LastHeight def.INT              `json:"last_height"`
 	BlockMetas []*pbtypes.BlockMeta `json:"block_metas"`
 }
 
@@ -47,7 +48,7 @@ type ResultStatus struct {
 	PubKey            crypto.PubKey `json:"pub_key"`
 	LatestBlockHash   []byte        `json:"latest_block_hash"`
 	LatestAppHash     []byte        `json:"latest_app_hash"`
-	LatestBlockHeight INT           `json:"latest_block_height"`
+	LatestBlockHeight def.INT       `json:"latest_block_height"`
 	LatestBlockTime   int64         `json:"latest_block_time"` // nano
 }
 
@@ -67,7 +68,7 @@ type Peer struct {
 }
 
 type ResultValidators struct {
-	BlockHeight INT          `json:"block_height"`
+	BlockHeight def.INT      `json:"block_height"`
 	Validators  []*Validator `json:"validators"`
 }
 
@@ -100,10 +101,10 @@ type ResultUnconfirmedTxs struct {
 }
 
 type ResultInfo struct {
-	Data             string `json:"data"`
-	Version          string `json:"version"`
-	LastBlockHeight  INT    `json:"last_block_height"`
-	LastBlockAppHash []byte `json:"last_block_app_hash"`
+	Data             string  `json:"data"`
+	Version          string  `json:"version"`
+	LastBlockHeight  def.INT `json:"last_block_height"`
+	LastBlockAppHash []byte  `json:"last_block_app_hash"`
 }
 
 type ResultQuery struct {
@@ -133,7 +134,7 @@ type ResultEvent struct {
 
 type ResultSurveillance struct {
 	NanoSecsPerTx time.Duration
-	Height        INT
+	Height        def.INT
 	Addr          string
 	IsValidator   bool
 	NumValidators int
@@ -150,7 +151,7 @@ type ResultCoreVersion struct {
 }
 
 type ResultNonEmptyHeights struct {
-	Heights []INT `json:"heights"`
+	Heights []def.INT `json:"heights"`
 }
 
 //----------------------------------------

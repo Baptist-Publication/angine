@@ -29,6 +29,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const (
@@ -400,7 +401,7 @@ func makeRoundStepMessages(rs *RoundState) (nrsMsg *csspb.NewRoundStepMessage, c
 		Height: rs.Height,
 		Round:  rs.Round,
 		Step:   rs.Step,
-		SecondsSinceStartTime: agtypes.INT(time.Now().Sub(rs.StartTime).Seconds()),
+		SecondsSinceStartTime: def.INT(time.Now().Sub(rs.StartTime).Seconds()),
 		LastCommitRound:       rs.LastCommit.Round(),
 	}
 	if rs.Step == csspb.RoundStepType_Commit {
@@ -719,20 +720,20 @@ func (conR *ConsensusReactor) StringIndented(indent string) string {
 
 // Read only when returned by PeerState.GetRoundState().
 type PeerRoundState struct {
-	Height                   agtypes.INT           // Height peer is at
-	Round                    agtypes.INT           // Round peer is at, -1 if unknown.
+	Height                   def.INT               // Height peer is at
+	Round                    def.INT               // Round peer is at, -1 if unknown.
 	Step                     csspb.RoundStepType   // Step peer is at
 	StartTime                time.Time             // Estimated start of round 0 at this height
 	Proposal                 bool                  // True if peer has proposal for this round
 	ProposalBlockPartsHeader pbtypes.PartSetHeader //
 	ProposalBlockParts       *BitArray             //
-	ProposalPOLRound         agtypes.INT           // Proposal's POL round. -1 if none.
+	ProposalPOLRound         def.INT               // Proposal's POL round. -1 if none.
 	ProposalPOL              *BitArray             // nil until ProposalPOLMessage received.
 	Prevotes                 *BitArray             // All votes peer has for this round
 	Precommits               *BitArray             // All precommits peer has for this round
-	LastCommitRound          agtypes.INT           // Round of commit for last height. -1 if none.
+	LastCommitRound          def.INT               // Round of commit for last height. -1 if none.
 	LastCommit               *BitArray             // All commit precommits of commit for last height.
-	CatchupCommitRound       agtypes.INT           // Round that we have commit for. Not necessarily unique. -1 if none.
+	CatchupCommitRound       def.INT               // Round that we have commit for. Not necessarily unique. -1 if none.
 	CatchupCommit            *BitArray             // All commit precommits peer has for this height & CatchupCommitRound
 }
 
@@ -801,7 +802,7 @@ func (ps *PeerState) GetRoundState() *PeerRoundState {
 
 // Returns an atomic snapshot of the PeerRoundState's height
 // used by the mempool to ensure peers are caught up before broadcasting new txs
-func (ps *PeerState) GetHeight() agtypes.INT {
+func (ps *PeerState) GetHeight() def.INT {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	return ps.PeerRoundState.Height
@@ -826,7 +827,7 @@ func (ps *PeerState) SetHasProposal(proposal *pbtypes.Proposal) {
 	ps.ProposalPOL = nil // Nil until ProposalPOLMessage received.
 }
 
-func (ps *PeerState) SetHasProposalBlockPart(height, round agtypes.INT, index int) {
+func (ps *PeerState) SetHasProposalBlockPart(height, round def.INT, index int) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
@@ -876,7 +877,7 @@ func (ps *PeerState) PickVoteToSend(votes agtypes.VoteSetReader) (vote *pbtypes.
 	return nil, false
 }
 
-func (ps *PeerState) getVoteBitArray(height, round agtypes.INT, type_ pbtypes.VoteType) *BitArray {
+func (ps *PeerState) getVoteBitArray(height, round def.INT, type_ pbtypes.VoteType) *BitArray {
 	if !pbtypes.IsVoteTypeValid(type_) {
 		PanicSanity("Invalid vote type")
 	}
@@ -923,7 +924,7 @@ func (ps *PeerState) getVoteBitArray(height, round agtypes.INT, type_ pbtypes.Vo
 }
 
 // 'round': A round for which we have a +2/3 commit.
-func (ps *PeerState) ensureCatchupCommitRound(height, round agtypes.INT, numValidators int) {
+func (ps *PeerState) ensureCatchupCommitRound(height, round def.INT, numValidators int) {
 	if ps.Height != height {
 		return
 	}
@@ -947,13 +948,13 @@ func (ps *PeerState) ensureCatchupCommitRound(height, round agtypes.INT, numVali
 
 // NOTE: It's important to make sure that numValidators actually matches
 // what the node sees as the number of validators for height.
-func (ps *PeerState) EnsureVoteBitArrays(height agtypes.INT, numValidators int) {
+func (ps *PeerState) EnsureVoteBitArrays(height def.INT, numValidators int) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	ps.ensureVoteBitArrays(height, numValidators)
 }
 
-func (ps *PeerState) ensureVoteBitArrays(height agtypes.INT, numValidators int) {
+func (ps *PeerState) ensureVoteBitArrays(height def.INT, numValidators int) {
 	if ps.Height == height {
 		if ps.Prevotes == nil {
 			ps.Prevotes = NewBitArray(numValidators)
@@ -981,7 +982,7 @@ func (ps *PeerState) SetHasVote(vote *pbtypes.Vote) {
 	ps.setHasVote(vdata.Height, vdata.Round, vdata.Type, int(vdata.ValidatorIndex))
 }
 
-func (ps *PeerState) setHasVote(height, round agtypes.INT, type_ pbtypes.VoteType, index int) {
+func (ps *PeerState) setHasVote(height, round def.INT, type_ pbtypes.VoteType, index int) {
 	//ps.slogger.Debugw("setHasVote(LastCommit)", "lastCommit", ps.LastCommit, "index", index)
 
 	// NOTE: some may be nil BitArrays -> no side effects.

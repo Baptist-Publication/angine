@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
-	agtypes "github.com/Baptist-Publication/angine/types"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 	cfg "github.com/spf13/viper"
 )
 
@@ -25,7 +25,7 @@ func BlockStoreDB(config *cfg.Viper) dbm.DB {
 	return dbm.NewDB("blockstore", db_backend, db_dir)
 }
 
-func LoadBlockStore(blockStoreDB dbm.DB, height agtypes.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
+func LoadBlockStore(blockStoreDB dbm.DB, height def.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
 	blockStore := NewBlockStore(blockStoreDB)
 	nextBlock := blockStore.LoadBlock(height + 1)
 	if nextBlock == nil {
@@ -49,11 +49,11 @@ func (st *StoreTool) Init(config *cfg.Viper) error {
 	return nil
 }
 
-func (st *StoreTool) LoadBlock(height agtypes.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
+func (st *StoreTool) LoadBlock(height def.INT) (*pbtypes.Block, *pbtypes.BlockMeta, *pbtypes.BlockID) {
 	return LoadBlockStore(st.db, height)
 }
 
-func (st *StoreTool) LastHeight() agtypes.INT {
+func (st *StoreTool) LastHeight() def.INT {
 	return st.lastBlock.Height
 }
 
@@ -84,7 +84,7 @@ func (st *StoreTool) RevertFromBackup(branchName string) error {
 	return nil
 }
 
-func (st *StoreTool) SaveNewLastBlock(toHeight agtypes.INT) error {
+func (st *StoreTool) SaveNewLastBlock(toHeight def.INT) error {
 	if toHeight >= st.lastBlock.Height {
 		return ErrConvertToFuture
 	}

@@ -27,6 +27,7 @@ import (
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	crypto "github.com/Baptist-Publication/chorus-module/lib/go-crypto"
 	"github.com/Baptist-Publication/chorus-module/lib/go-merkle"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 // ValidatorSet represent a set of *Validator at a given height.
@@ -45,7 +46,7 @@ type ValidatorSet struct {
 
 	// cached (unexported)
 	proposer         *Validator
-	totalVotingPower INT
+	totalVotingPower def.INT
 }
 
 func (vs *ValidatorSet) ToPbVSet() *pbtypes.ValidatorSet {
@@ -106,7 +107,7 @@ func ValSetFromJsonBytes(data []byte) *ValidatorSet {
 }
 
 // TODO: mind the overflow when times and votingPower shares too large.
-func (valSet *ValidatorSet) IncrementAccum(times INT) {
+func (valSet *ValidatorSet) IncrementAccum(times def.INT) {
 	// Add VotingPower * times to each validator and order into heap.
 	validatorsHeap := NewHeap()
 	for _, val := range valSet.Validators {
@@ -187,7 +188,7 @@ func (valSet *ValidatorSet) Size() int {
 	return len(valSet.Validators)
 }
 
-func (valSet *ValidatorSet) TotalVotingPower() INT {
+func (valSet *ValidatorSet) TotalVotingPower() def.INT {
 	if valSet.totalVotingPower == 0 {
 		for _, val := range valSet.Validators {
 			valSet.totalVotingPower += val.VotingPower
@@ -288,7 +289,7 @@ func (valSet *ValidatorSet) Iterate(fn func(index int, val *Validator) bool) {
 }
 
 // Verify that +2/3 of the set had signed the given signBytes
-func (valSet *ValidatorSet) VerifyCommit(chainID string, blockID pbtypes.BlockID, height INT, commit *CommitCache) error {
+func (valSet *ValidatorSet) VerifyCommit(chainID string, blockID pbtypes.BlockID, height def.INT, commit *CommitCache) error {
 	if valSet.Size() != len(commit.Precommits) {
 		return fmt.Errorf("Invalid commit -- wrong set size: %v vs %v", valSet.Size(), len(commit.Precommits))
 	}
@@ -296,7 +297,7 @@ func (valSet *ValidatorSet) VerifyCommit(chainID string, blockID pbtypes.BlockID
 		return fmt.Errorf("Invalid commit -- wrong height: %v vs %v", height, commit.Height())
 	}
 
-	var talliedVotingPower INT
+	var talliedVotingPower def.INT
 	round := commit.Round()
 
 	for idx, precommit := range commit.Precommits {
@@ -393,7 +394,7 @@ func (ac accumComparable) Less(o interface{}) bool {
 // For testing
 
 // NOTE: PrivValidator are in order.
-func RandValidatorSet(logger *zap.Logger, numValidators int, votingPower INT) (*ValidatorSet, []*PrivValidator) {
+func RandValidatorSet(logger *zap.Logger, numValidators int, votingPower def.INT) (*ValidatorSet, []*PrivValidator) {
 	vals := make([]*Validator, numValidators)
 	privValidators := make([]*PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {

@@ -19,9 +19,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	crypto "github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
+	"github.com/gogo/protobuf/proto"
 )
 
 func StringTo32byte(key string) ([32]byte, error) {
@@ -143,16 +144,16 @@ func NewDefaultSignature(sigbytes []byte) crypto.Signature {
 	return &sarray
 }
 
-func AtoHeight(heightStr string) (INT, error) {
+func AtoHeight(heightStr string) (def.INT, error) {
 	i, err := strconv.Atoi(heightStr)
-	return INT(i), err
+	return def.INT(i), err
 }
 
-func HeightToA(height INT) string {
+func HeightToA(height def.INT) string {
 	return strconv.FormatInt(height, 10)
 }
 
-func NanoToTime(nano INT) time.Time {
+func NanoToTime(nano def.INT) time.Time {
 	return time.Unix(0, nano)
 }
 

@@ -8,6 +8,7 @@ import (
 
 	crypto "github.com/Baptist-Publication/chorus-module/lib/go-crypto"
 	"github.com/Baptist-Publication/chorus-module/xlib"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 var (
@@ -70,7 +71,7 @@ func (pt *PrivValidatorTool) DelBackup(branchName string) {
 	os.Remove(pt.backupName(branchName))
 }
 
-func (pt *PrivValidatorTool) SaveNewPrivV(toHeight INT) error {
+func (pt *PrivValidatorTool) SaveNewPrivV(toHeight def.INT) error {
 	pt.pv.LastHeight = toHeight
 	pt.pv.LastRound = 0
 	pt.pv.LastStep = 0

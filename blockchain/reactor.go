@@ -24,6 +24,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -48,7 +49,7 @@ const (
 
 var ErrNotFound = errors.New("leveldb not found")
 
-type BlockVerifierFunc func(pbtypes.BlockID, agtypes.INT, *agtypes.CommitCache) error
+type BlockVerifierFunc func(pbtypes.BlockID, def.INT, *agtypes.CommitCache) error
 type BlockExecuterFunc func(*agtypes.BlockCache, *agtypes.PartSet, *agtypes.CommitCache) error
 type ValidatorSetorFunc func(*agtypes.BlockCache)
 
@@ -73,7 +74,7 @@ type BlockchainReactor struct {
 	logger *zap.Logger
 }
 
-func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeight agtypes.INT, store *BlockStore, fastSync bool) *BlockchainReactor {
+func NewBlockchainReactor(logger *zap.Logger, config *viper.Viper, lastBlockHeight def.INT, store *BlockStore, fastSync bool) *BlockchainReactor {
 
 	if lastBlockHeight == store.Height()-1 {
 		store.height -= 1 // XXX HACK, make this better

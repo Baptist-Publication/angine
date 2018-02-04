@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 )
 
 // polRound: -1 if no polRound.
-func NewProposal(height, round INT, blockPartsHeader pbtypes.PartSetHeader, polRound INT, polBlockID pbtypes.BlockID) *pbtypes.Proposal {
+func NewProposal(height, round def.INT, blockPartsHeader pbtypes.PartSetHeader, polRound def.INT, polBlockID pbtypes.BlockID) *pbtypes.Proposal {
 	return &pbtypes.Proposal{
 		Data: &pbtypes.ProposalData{
 			Height:           height,

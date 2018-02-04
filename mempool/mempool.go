@@ -27,6 +27,7 @@ import (
 	auto "github.com/Baptist-Publication/chorus-module/lib/go-autofile"
 	"github.com/Baptist-Publication/chorus-module/lib/go-clist"
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const cacheSize = 100000
@@ -40,8 +41,8 @@ type Mempool struct {
 	config  *viper.Viper
 	mtx     sync.Mutex
 	txs     *clist.CList // concurrent linked-list of good txs
-	counter agtypes.INT  // simple incrementing counter
-	height  agtypes.INT  // the last block Update()'d to
+	counter def.INT      // simple incrementing counter
+	height  def.INT      // the last block Update()'d to
 
 	// Keep a cache of already-seen txs.
 	cache *txCache
@@ -151,7 +152,7 @@ func (mem *Mempool) Reap(maxTxs int) []agtypes.Tx {
 // Mempool will discard these txs.
 // NOTE: this should be called *after* block is committed by consensus.
 // NOTE: unsafe; Lock/Unlock must be managed by caller
-func (mem *Mempool) Update(height agtypes.INT, txs []agtypes.Tx) {
+func (mem *Mempool) Update(height def.INT, txs []agtypes.Tx) {
 	// First, create a lookup map of txns in new txs.
 	txsMap := make(map[string]struct{})
 	for _, tx := range txs {
@@ -249,12 +250,12 @@ func (mem *Mempool) initWAL() {
 
 // A transaction that successfully ran
 type mempoolTx struct {
-	counter int64       // a simple incrementing counter
-	height  agtypes.INT // height that this tx had been validated in
-	tx      agtypes.Tx  //
+	counter int64      // a simple incrementing counter
+	height  def.INT    // height that this tx had been validated in
+	tx      agtypes.Tx //
 }
 
-func (memTx *mempoolTx) Height() agtypes.INT {
+func (memTx *mempoolTx) Height() def.INT {
 	return atomic.LoadInt64(&memTx.height)
 }
 

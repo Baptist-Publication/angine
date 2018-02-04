@@ -15,8 +15,8 @@
 package state
 
 import (
-	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 type (
@@ -24,22 +24,22 @@ type (
 	ErrProxyAppConn error
 
 	ErrUnknownBlock struct {
-		Height agtypes.INT
+		Height def.INT
 	}
 
 	ErrBlockHashMismatch struct {
 		CoreHash []byte
 		AppHash  []byte
-		Height   agtypes.INT
+		Height   def.INT
 	}
 
 	ErrAppBlockHeightTooHigh struct {
-		CoreHeight agtypes.INT
-		AppHeight  agtypes.INT
+		CoreHeight def.INT
+		AppHeight  def.INT
 	}
 
 	ErrLastStateMismatch struct {
-		Height agtypes.INT
+		Height def.INT
 		Core   []byte
 		App    []byte
 	}

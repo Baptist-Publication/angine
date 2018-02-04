@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	cfg "github.com/spf13/viper"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
-	agtypes "github.com/Baptist-Publication/angine/types"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
+	cfg "github.com/spf13/viper"
 )
 
 var (
@@ -33,7 +33,7 @@ func (st *StateTool) Init(config *cfg.Viper) error {
 func (st *StateTool) ChangeToIntermidiate() {
 }
 
-func (st *StateTool) LastHeight() agtypes.INT {
+func (st *StateTool) LastHeight() def.INT {
 	return st.lastState.LastBlockHeight
 }
 

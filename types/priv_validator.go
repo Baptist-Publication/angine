@@ -27,6 +27,7 @@ import (
 	"github.com/Baptist-Publication/chorus-module/lib/ed25519"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 	"go.uber.org/zap"
 )
 
@@ -52,8 +53,8 @@ func voteToStep(vote *pbtypes.Vote) int8 {
 type PrivValidatorJSON struct {
 	PubKey        crypto.StPubKey    `json:"pub_key"`
 	Coinbase      crypto.StPubKey    `json:"coin_base"`
-	LastHeight    INT                `json:"last_height"`
-	LastRound     INT                `json:"last_round"`
+	LastHeight    def.INT            `json:"last_height"`
+	LastRound     def.INT            `json:"last_round"`
 	LastStep      int8               `json:"last_step"`
 	LastSignature crypto.StSignature `json:"last_signature"` // so we dont lose signatures
 	LastSignBytes Bytes              `json:"last_signbytes"` // so we dont lose signatures
@@ -275,7 +276,7 @@ func (privVal *PrivValidator) SignProposal(chainID string, proposal *pbtypes.Pro
 }
 
 // check if there's a regression. Else sign and write the hrs+signature to disk
-func (privVal *PrivValidator) signBytesHRS(height, round INT, step int8, signBytes []byte) (crypto.Signature, error) {
+func (privVal *PrivValidator) signBytesHRS(height, round def.INT, step int8, signBytes []byte) (crypto.Signature, error) {
 	// If height regression, err
 	if privVal.LastHeight > height {
 		return nil, errors.New("Height regression")

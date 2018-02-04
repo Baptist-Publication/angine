@@ -25,6 +25,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 /*
@@ -45,7 +46,7 @@ type BlockStore struct {
 	db dbm.DB
 
 	mtx    sync.RWMutex
-	height agtypes.INT
+	height def.INT
 }
 
 func NewBlockStore(db dbm.DB) *BlockStore {
@@ -57,7 +58,7 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 }
 
 // Height() returns the last known contiguous block height.
-func (bs *BlockStore) Height() agtypes.INT {
+func (bs *BlockStore) Height() def.INT {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
 	return bs.height
@@ -71,7 +72,7 @@ func (bs *BlockStore) GetReader(key []byte) io.Reader {
 	return bytes.NewReader(bytez)
 }
 
-func (bs *BlockStore) LoadBlock(height agtypes.INT) *agtypes.BlockCache {
+func (bs *BlockStore) LoadBlock(height def.INT) *agtypes.BlockCache {
 	var err error
 	meta := bs.LoadBlockMeta(height)
 	if meta == nil {
@@ -90,7 +91,7 @@ func (bs *BlockStore) LoadBlock(height agtypes.INT) *agtypes.BlockCache {
 	return agtypes.MakeBlockCache(&block)
 }
 
-func (bs *BlockStore) LoadBlockPart(height agtypes.INT, index int) *pbtypes.Part {
+func (bs *BlockStore) LoadBlockPart(height def.INT, index int) *pbtypes.Part {
 	var err error
 	partBys := bs.db.Get(calcBlockPartKey(height, index))
 	if len(partBys) == 0 {
@@ -105,11 +106,11 @@ func (bs *BlockStore) LoadBlockPart(height agtypes.INT, index int) *pbtypes.Part
 	return &part
 }
 
-func (bs *BlockStore) LoadBlockMeta(height agtypes.INT) *pbtypes.BlockMeta {
+func (bs *BlockStore) LoadBlockMeta(height def.INT) *pbtypes.BlockMeta {
 	return bs.loadBlockMeta(height, false)
 }
 
-func (bs *BlockStore) loadBlockMeta(height agtypes.INT, archv bool) *pbtypes.BlockMeta {
+func (bs *BlockStore) loadBlockMeta(height def.INT, archv bool) *pbtypes.BlockMeta {
 	metaBys := bs.db.Get(calcBlockMetaKey(height))
 	var meta pbtypes.BlockMeta
 	err := agtypes.UnmarshalData(metaBys, &meta)
@@ -121,7 +122,7 @@ func (bs *BlockStore) loadBlockMeta(height agtypes.INT, archv bool) *pbtypes.Blo
 
 // The +2/3 and other Precommit-votes for block at `height`.
 // This Commit comes from block.LastCommit for `height+1`.
-func (bs *BlockStore) LoadBlockCommit(height agtypes.INT) *agtypes.CommitCache {
+func (bs *BlockStore) LoadBlockCommit(height def.INT) *agtypes.CommitCache {
 	var err error
 	commitBys := bs.db.Get(calcBlockCommitKey(height))
 	if len(commitBys) == 0 {
@@ -136,7 +137,7 @@ func (bs *BlockStore) LoadBlockCommit(height agtypes.INT) *agtypes.CommitCache {
 }
 
 // NOTE: the Precommit-vote heights are for the block at `height`
-func (bs *BlockStore) LoadSeenCommit(height agtypes.INT) *agtypes.CommitCache {
+func (bs *BlockStore) LoadSeenCommit(height def.INT) *agtypes.CommitCache {
 	var err error
 	commitBys := bs.db.Get(calcSeenCommitKey(height))
 	if len(commitBys) == 0 {
@@ -207,7 +208,7 @@ func (bs *BlockStore) SaveBlock(block *agtypes.BlockCache, blockParts *agtypes.P
 	bs.db.SetSync(nil, nil)
 }
 
-func (bs *BlockStore) saveBlockPart(height agtypes.INT, index int, part *pbtypes.Part) {
+func (bs *BlockStore) saveBlockPart(height def.INT, index int, part *pbtypes.Part) {
 	if height != bs.Height()+1 {
 		PanicSanity(Fmt("BlockStore can only save contiguous blocks. Wanted %v, got %v", bs.Height()+1, height))
 	}
@@ -221,19 +222,19 @@ func (bs *BlockStore) saveBlockPart(height agtypes.INT, index int, part *pbtypes
 
 //-----------------------------------------------------------------------------
 
-func calcBlockMetaKey(height agtypes.INT) []byte {
+func calcBlockMetaKey(height def.INT) []byte {
 	return []byte(fmt.Sprintf("H:%v", height))
 }
 
-func calcBlockPartKey(height agtypes.INT, partIndex int) []byte {
+func calcBlockPartKey(height def.INT, partIndex int) []byte {
 	return []byte(fmt.Sprintf("P:%v:%v", height, partIndex))
 }
 
-func calcBlockCommitKey(height agtypes.INT) []byte {
+func calcBlockCommitKey(height def.INT) []byte {
 	return []byte(fmt.Sprintf("C:%v", height))
 }
 
-func calcSeenCommitKey(height agtypes.INT) []byte {
+func calcSeenCommitKey(height def.INT) []byte {
 	return []byte(fmt.Sprintf("SC:%v", height))
 }
 
@@ -242,8 +243,8 @@ func calcSeenCommitKey(height agtypes.INT) []byte {
 var blockStoreKey = []byte("blockStore")
 
 type BlockStoreStateJSON struct {
-	Height       agtypes.INT
-	OriginHeight agtypes.INT
+	Height       def.INT
+	OriginHeight def.INT
 }
 
 func (bsj BlockStoreStateJSON) Save(db dbm.DB) {
@@ -276,14 +277,14 @@ func LoadBlockStoreStateJSON(db dbm.DB) BlockStoreStateJSON {
 }
 
 type NonEmptyBlockIterator struct {
-	cursor     agtypes.INT
+	cursor     def.INT
 	blockstore *BlockStore
 }
 
 func NewNonEmptyBlockIterator(store *BlockStore) *NonEmptyBlockIterator {
 	height := store.Height()
 	meta := store.LoadBlockMeta(height)
-	var nonEmpty agtypes.INT = 0
+	var nonEmpty def.INT = 0
 	if meta.Header.NumTxs == 0 {
 		nonEmpty = meta.Header.LastNonEmptyHeight
 	} else {
