@@ -88,14 +88,14 @@ func InitRuntime(root string, chainId string) error {
 
 	// priv_validator.json
 	priv := genPrivFile(conf.GetString("priv_validator_file"))
-	gvs := []types.GenesisValidator{types.GenesisValidator{
-		PubKey: priv.PubKey,
-		Amount: 100,
-		IsCA:   true,
-	}}
+	// gvs := []types.GenesisValidator{types.GenesisValidator{
+	// 	PubKey: priv.PubKey,
+	// 	Amount: 100,
+	// 	IsCA:   true,
+	// }}
 
 	// genesis.json
-	_, err = genGenesiFile(conf.GetString("genesis_file"), chainId, gvs)
+	_, err = genGenesiFile(conf.GetString("genesis_file"), chainId, nil)
 	if err != nil {
 		return err
 	}
