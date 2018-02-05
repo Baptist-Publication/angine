@@ -350,7 +350,9 @@ func (ang *Angine) ConnectApp(app agtypes.Application) error {
 		return fmt.Errorf("no hooks implemented")
 	}
 
-	ang.consensus.SetValSetLoader(app.ValSetLoader())
+	if ang.conf.GetBool("enable_incentive") {
+		ang.consensus.SetValSetLoader(app.ValSetLoader())
+	}
 
 	agtypes.AddListenerForEvent(*ang.eventSwitch, "angine", agtypes.EventStringHookNewRound(), func(ed agtypes.TMEventData) {
 		data := ed.(agtypes.EventDataHookNewRound)
