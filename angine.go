@@ -100,29 +100,10 @@ func ProtocolAndAddress(listenAddr string) (string, string) {
 
 // Initialize generates genesis.json and priv_validator.json automatically.
 // It is usually used with commands like "init" before user put the node into running.
-func Initialize(tune *Tunes, chainID string) {
-	var conf *viper.Viper
-	if tune.Conf == nil {
-		conf = ac.GetConfig(tune.Runtime)
-	} else {
-		conf = tune.Conf
-	}
-	conf.AutomaticEnv()
-
-	genPrivFile(conf.GetString("priv_validator_file"))
-	//priv := genPrivFile(conf.GetString("priv_validator_file"))
-	//gvs := []types.GenesisValidator{types.GenesisValidator{
-	//	PubKey: priv.PubKey,
-	//	Amount: 100,
-	//	IsCA:   true,
-	//}}
-	genDoc, err := genGenesiFile(conf.GetString("genesis_file"), chainID, nil)
-	if err != nil {
+func Initialize(tune *Tunes, chainId string) {
+	if err := ac.InitRuntime(tune.Runtime, chainId); err != nil {
 		cmn.PanicSanity(err)
 	}
-
-	fmt.Println("Initialized ", genDoc.ChainID, "genesis", conf.GetString("genesis_file"), "priv_validator", conf.GetString("priv_validator_file"))
-	fmt.Println("Check the files generated, make sure everything is OK.")
 }
 
 func openDBs(conf *viper.Viper) map[string]dbm.DB {
@@ -931,27 +912,6 @@ func getLogger(conf *viper.Viper, chainID string) (*zap.Logger, error) {
 	return nil, fmt.Errorf("fail to build zap logger")
 }
 
-func genPrivFile(path string) *agtypes.PrivValidator {
-	privValidator := agtypes.GenPrivValidator(nil)
-	privValidator.SetFile(path)
-	privValidator.Save()
-	return privValidator
-}
-
-func genGenesiFile(path, chainID string, gVals []agtypes.GenesisValidator) (*agtypes.GenesisDoc, error) {
-	if len(chainID) == 0 {
-		// chainID = cmn.Fmt("annchain-%v", cmn.RandStr(6))
-		chainID = "chorus"
-	}
-	genDoc := &agtypes.GenesisDoc{
-		ChainID: chainID,
-		Plugins: "specialop,suspect,querycache",
-		//GenesisTime: agtypes.Time{time.Now()},
-	}
-	genDoc.Validators = gVals
-	return genDoc, genDoc.SaveAs(path)
-}
-
 func checkPrivValidatorFile(conf *viper.Viper) error {
 	if privFile := conf.GetString("priv_validator_file"); !cmn.FileExists(privFile) {
 		return fmt.Errorf("PrivValidator file needed: %s", privFile)
@@ -996,6 +956,7 @@ func prepareP2P(logger *zap.Logger, conf *viper.Viper, genesisBytes []byte, priv
 	if err != nil {
 		return nil, errors.Wrap(err, "prepareP2P")
 	}
+
 	nodeInfo := &p2p.NodeInfo{
 		PubKey:      *(privValidator.GetPubKey().(*crypto.PubKeyEd25519)),
 		SigndPubKey: conf.GetString("signbyCA"),
