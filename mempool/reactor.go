@@ -26,6 +26,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	"github.com/Baptist-Publication/chorus-module/lib/go-clist"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const (
@@ -103,7 +104,7 @@ func (memR *MempoolReactor) BroadcastTx(tx agtypes.Tx) error {
 }
 
 type PeerState interface {
-	GetHeight() agtypes.INT
+	GetHeight() def.INT
 }
 
 type Peer interface {

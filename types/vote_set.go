@@ -23,6 +23,7 @@ import (
 
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 /*
@@ -72,8 +73,8 @@ var (
 
 type VoteSet struct {
 	chainID string
-	height  INT
-	round   INT
+	height  def.INT
+	round   def.INT
 	type_   pbtypes.VoteType
 
 	mtx           sync.Mutex
@@ -87,7 +88,7 @@ type VoteSet struct {
 }
 
 // Constructs a new VoteSet struct used to accumulate votes for given height/round.
-func NewVoteSet(chainID string, height INT, round INT, type_ pbtypes.VoteType, valSet *ValidatorSet) *VoteSet {
+func NewVoteSet(chainID string, height def.INT, round def.INT, type_ pbtypes.VoteType, valSet *ValidatorSet) *VoteSet {
 	if height == 0 {
 		PanicSanity("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
@@ -114,14 +115,14 @@ func (voteSet *VoteSet) ChainID() string {
 	return voteSet.chainID
 }
 
-func (voteSet *VoteSet) Height() INT {
+func (voteSet *VoteSet) Height() def.INT {
 	if voteSet == nil {
 		return 0
 	}
 	return voteSet.height
 }
 
-func (voteSet *VoteSet) Round() INT {
+func (voteSet *VoteSet) Round() def.INT {
 	if voteSet == nil {
 		return -1
 	}
@@ -240,7 +241,7 @@ func (voteSet *VoteSet) getVote(valIndex int, blockKey string) (vote *pbtypes.Vo
 
 // Assumes signature is valid.
 // If conflicting vote exists, returns it.
-func (voteSet *VoteSet) addVerifiedVote(vote *pbtypes.Vote, blockKey string, votingPower INT) (added bool, conflicting *pbtypes.Vote) {
+func (voteSet *VoteSet) addVerifiedVote(vote *pbtypes.Vote, blockKey string, votingPower def.INT) (added bool, conflicting *pbtypes.Vote) {
 	vdata := vote.GetData()
 	valIndex := int(vdata.ValidatorIndex)
 
@@ -526,7 +527,7 @@ type blockVotes struct {
 	peerMaj23 bool            // peer claims to have maj23
 	bitArray  *BitArray       // valIndex -> hasVote?
 	votes     []*pbtypes.Vote // valIndex -> *Vote
-	sum       INT             // vote sum
+	sum       def.INT         // vote sum
 }
 
 func newBlockVotes(peerMaj23 bool, numValidators int) *blockVotes {
@@ -538,7 +539,7 @@ func newBlockVotes(peerMaj23 bool, numValidators int) *blockVotes {
 	}
 }
 
-func (vs *blockVotes) addVerifiedVote(vote *pbtypes.Vote, votingPower INT) {
+func (vs *blockVotes) addVerifiedVote(vote *pbtypes.Vote, votingPower def.INT) {
 	valIndex := int(vote.GetData().ValidatorIndex)
 	if existing := vs.votes[valIndex]; existing == nil {
 		vs.bitArray.SetIndex(valIndex, true)
@@ -558,8 +559,8 @@ func (vs *blockVotes) getByIndex(index int) *pbtypes.Vote {
 
 // Common interface between *consensus.VoteSet and types.Commit
 type VoteSetReader interface {
-	Height() INT
-	Round() INT
+	Height() def.INT
+	Round() def.INT
 	Type() pbtypes.VoteType
 	Size() int
 	BitArray() *BitArray

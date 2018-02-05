@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"strings"
 	"time"
-)
 
-type INT = int64
-type HINT = int32 // half int
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
+)
 
 type Bytes []byte
 
-type ValSetLoaderFunc func(height, round INT, size int) *ValidatorSet
+type ValSetLoaderFunc func(height, round def.INT, size int) *ValidatorSet
 
 func (b *Bytes) MarshalJSON() ([]byte, error) {
 	bys := strings.ToUpper(hex.EncodeToString(*b))

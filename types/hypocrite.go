@@ -9,6 +9,7 @@ import (
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	"github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const (
@@ -43,8 +44,8 @@ type (
 	HypoBadVoteEvidence struct {
 		PubKey        string
 		VoteType      pbtypes.VoteType
-		Height        INT
-		Round         INT
+		Height        def.INT
+		Round         def.INT
 		Got           *pbtypes.Vote
 		Expected      *pbtypes.Vote
 		ValidatorSize int
@@ -53,8 +54,8 @@ type (
 	HypoProposalTimeoutEvidence struct {
 		Proposal      *pbtypes.Proposal
 		BlockPartsBA  *common.BitArray
-		Height        INT
-		Round         INT
+		Height        def.INT
+		Round         def.INT
 		ValidatorSize int
 	}
 

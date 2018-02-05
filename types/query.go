@@ -17,6 +17,8 @@ package types
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 const (
@@ -25,7 +27,7 @@ const (
 )
 
 type TxExecutionResult struct {
-	Height        INT       `json:"height"`
+	Height        def.INT   `json:"height"`
 	BlockHash     []byte    `json:"blockhash"`
 	BlockTime     time.Time `json:"blocktime"`
 	ValidatorHash []byte    `json:"validatorhash"`

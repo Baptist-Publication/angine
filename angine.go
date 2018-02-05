@@ -41,6 +41,7 @@ import (
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-events"
 	p2p "github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -284,7 +285,7 @@ func (ang *Angine) assembleStateMachine(stateM *state.State) {
 	consensusReactor := consensus.NewConsensusReactor(ang.logger, consensusState, fastSync)
 	consensusState.BindReactor(consensusReactor)
 
-	bcReactor.SetBlockVerifier(func(bID pbtypes.BlockID, h agtypes.INT, lc *agtypes.CommitCache) error {
+	bcReactor.SetBlockVerifier(func(bID pbtypes.BlockID, h def.INT, lc *agtypes.CommitCache) error {
 		return stateM.Validators.VerifyCommit(stateM.ChainID, bID, h, lc)
 	})
 	bcReactor.SetBlockExecuter(func(blk *agtypes.BlockCache, pst *agtypes.PartSet, c *agtypes.CommitCache) error {
@@ -414,7 +415,7 @@ func (ang *Angine) ConnectApp(app agtypes.Application) error {
 	}
 
 	info := app.Info()
-	if err := ang.RecoverFromCrash(info.LastBlockAppHash, agtypes.INT(info.LastBlockHeight)); err != nil {
+	if err := ang.RecoverFromCrash(info.LastBlockAppHash, def.INT(info.LastBlockHeight)); err != nil {
 		return err
 	}
 
@@ -447,11 +448,11 @@ func (ang *Angine) GetNodeInfo() *p2p.NodeInfo {
 	return ang.p2pSwitch.NodeInfo()
 }
 
-func (ang *Angine) Height() agtypes.INT {
+func (ang *Angine) Height() def.INT {
 	return ang.blockstore.Height()
 }
 
-func (ang *Angine) NonEmptyHeight() agtypes.INT {
+func (ang *Angine) NonEmptyHeight() def.INT {
 	return ang.stateMachine.LastNonEmptyHeight
 }
 
@@ -506,7 +507,7 @@ func (ang *Angine) RegisterNodeInfo(ni *p2p.NodeInfo) {
 	ang.p2pSwitch.SetNodeInfo(ni)
 }
 
-func (ang *Angine) GetBlockMeta(height agtypes.INT) (meta *pbtypes.BlockMeta, err error) {
+func (ang *Angine) GetBlockMeta(height def.INT) (meta *pbtypes.BlockMeta, err error) {
 	if height == 0 {
 		err = fmt.Errorf("height must be greater than 0")
 		return
@@ -519,7 +520,7 @@ func (ang *Angine) GetBlockMeta(height agtypes.INT) (meta *pbtypes.BlockMeta, er
 	return
 }
 
-func (ang *Angine) GetBlock(height agtypes.INT) (block *agtypes.BlockCache, meta *pbtypes.BlockMeta, err error) {
+func (ang *Angine) GetBlock(height def.INT) (block *agtypes.BlockCache, meta *pbtypes.BlockMeta, err error) {
 
 	if height == 0 {
 		err = fmt.Errorf("height must be greater than 0")
@@ -570,7 +571,7 @@ func (ang *Angine) FlushMempool() {
 	ang.mempool.Flush()
 }
 
-func (ang *Angine) GetValidators() (agtypes.INT, *agtypes.ValidatorSet) {
+func (ang *Angine) GetValidators() (def.INT, *agtypes.ValidatorSet) {
 	return ang.stateMachine.LastBlockHeight, ang.stateMachine.Validators
 }
 
@@ -677,7 +678,7 @@ func (ang *Angine) EndBlock(block *agtypes.BlockCache, eventFireable events.Fire
 
 // Recover world status
 // Replay all blocks after blockHeight and ensure the result matches the current state.
-func (ang *Angine) RecoverFromCrash(appHash []byte, appBlockHeight agtypes.INT) error {
+func (ang *Angine) RecoverFromCrash(appHash []byte, appBlockHeight def.INT) error {
 	storeBlockHeight := ang.blockstore.Height()
 	stateBlockHeight := ang.stateMachine.LastBlockHeight
 

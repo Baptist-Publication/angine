@@ -33,6 +33,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	auto "github.com/Baptist-Publication/chorus-module/lib/go-autofile"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 // Unmarshal and apply a single message to the consensus state
@@ -98,13 +99,13 @@ func (cs *ConsensusState) readReplayMessage(msgBytes []byte, newStepCh chan inte
 	return nil
 }
 
-func (cs *ConsensusState) CatchupReplay(height agtypes.INT) error {
+func (cs *ConsensusState) CatchupReplay(height def.INT) error {
 	return cs.catchupReplay(height)
 }
 
 // replay only those messages since the last block.
 // timeoutRoutine should run concurrently to read off tickChan
-func (cs *ConsensusState) catchupReplay(csHeight agtypes.INT) error {
+func (cs *ConsensusState) catchupReplay(csHeight def.INT) error {
 
 	// set replayMode
 	cs.replayMode = true
@@ -379,7 +380,7 @@ func (pb *playback) replayConsoleLoop() int {
 
 // Parses marker lines of the form:
 // #HEIGHT: 12345
-func makeHeightSearchFunc(height agtypes.INT) auto.SearchFunc {
+func makeHeightSearchFunc(height def.INT) auto.SearchFunc {
 	return func(line string) (int, error) {
 		line = strings.TrimRight(line, "\n")
 		parts := strings.Split(line, " ")

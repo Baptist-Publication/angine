@@ -14,8 +14,10 @@
 
 package types
 
+import "github.com/Baptist-Publication/chorus-module/xlib/def"
+
 type IMempool interface {
 	Lock()
 	Unlock()
-	Update(height INT, txs []Tx)
+	Update(height def.INT, txs []Tx)
 }

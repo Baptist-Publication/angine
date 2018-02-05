@@ -27,6 +27,7 @@ import (
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-p2p"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 type SuspectPlugin struct {
@@ -253,6 +254,6 @@ func (sp *SuspectPlugin) Stop() {
 	sp.eventSwitch.RemoveListener("SuspectPlugin")
 }
 
-func (sp *SuspectPlugin) suspectKey(pk string, height, round agtypes.INT) string {
+func (sp *SuspectPlugin) suspectKey(pk string, height, round def.INT) string {
 	return agtypes.HeightToA(height) + pk + agtypes.HeightToA(round)
 }

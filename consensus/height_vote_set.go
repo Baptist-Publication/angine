@@ -18,11 +18,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	agtypes "github.com/Baptist-Publication/angine/types"
+	"github.com/pkg/errors"
 
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 type RoundVoteSet struct {
@@ -46,16 +47,16 @@ One for their LastCommit round, and another for the official commit round.
 */
 type HeightVoteSet struct {
 	chainID string
-	height  agtypes.INT
+	height  def.INT
 	valSet  *agtypes.ValidatorSet
 
 	mtx               sync.Mutex
-	round             agtypes.INT                  // max tracked round
-	roundVoteSets     map[agtypes.INT]RoundVoteSet // keys: [0...round]
-	peerCatchupRounds map[string][]agtypes.INT     // keys: peer.Key; values: at most 2 rounds
+	round             def.INT                  // max tracked round
+	roundVoteSets     map[def.INT]RoundVoteSet // keys: [0...round]
+	peerCatchupRounds map[string][]def.INT     // keys: peer.Key; values: at most 2 rounds
 }
 
-func NewHeightVoteSet(chainID string, height agtypes.INT, valSet *agtypes.ValidatorSet) *HeightVoteSet {
+func NewHeightVoteSet(chainID string, height def.INT, valSet *agtypes.ValidatorSet) *HeightVoteSet {
 	hvs := &HeightVoteSet{
 		chainID: chainID,
 	}
@@ -63,33 +64,33 @@ func NewHeightVoteSet(chainID string, height agtypes.INT, valSet *agtypes.Valida
 	return hvs
 }
 
-func (hvs *HeightVoteSet) Reset(height agtypes.INT, valSet *agtypes.ValidatorSet) {
+func (hvs *HeightVoteSet) Reset(height def.INT, valSet *agtypes.ValidatorSet) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 
 	hvs.height = height
 	hvs.valSet = valSet
-	hvs.roundVoteSets = make(map[agtypes.INT]RoundVoteSet)
-	hvs.peerCatchupRounds = make(map[string][]agtypes.INT)
+	hvs.roundVoteSets = make(map[def.INT]RoundVoteSet)
+	hvs.peerCatchupRounds = make(map[string][]def.INT)
 
 	hvs.addRound(0)
 	hvs.round = 0
 }
 
-func (hvs *HeightVoteSet) Height() agtypes.INT {
+func (hvs *HeightVoteSet) Height() def.INT {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	return hvs.height
 }
 
-func (hvs *HeightVoteSet) Round() agtypes.INT {
+func (hvs *HeightVoteSet) Round() def.INT {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	return hvs.round
 }
 
 // Create more RoundVoteSets up to round.
-func (hvs *HeightVoteSet) SetRound(round agtypes.INT) {
+func (hvs *HeightVoteSet) SetRound(round def.INT) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	if hvs.round != 0 && (round < hvs.round+1) {
@@ -104,7 +105,7 @@ func (hvs *HeightVoteSet) SetRound(round agtypes.INT) {
 	hvs.round = round
 }
 
-func (hvs *HeightVoteSet) addRound(round agtypes.INT) {
+func (hvs *HeightVoteSet) addRound(round def.INT) {
 	if _, ok := hvs.roundVoteSets[round]; ok {
 		PanicSanity("addRound() for an existing round")
 	}
@@ -143,13 +144,13 @@ func (hvs *HeightVoteSet) AddVote(vote *pbtypes.Vote, peerKey string) (added boo
 	return
 }
 
-func (hvs *HeightVoteSet) Prevotes(round agtypes.INT) *agtypes.VoteSet {
+func (hvs *HeightVoteSet) Prevotes(round def.INT) *agtypes.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	return hvs.getVoteSet(round, pbtypes.VoteType_Prevote)
 }
 
-func (hvs *HeightVoteSet) Precommits(round agtypes.INT) *agtypes.VoteSet {
+func (hvs *HeightVoteSet) Precommits(round def.INT) *agtypes.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	return hvs.getVoteSet(round, pbtypes.VoteType_Precommit)
@@ -157,7 +158,7 @@ func (hvs *HeightVoteSet) Precommits(round agtypes.INT) *agtypes.VoteSet {
 
 // Last round and blockID that has +2/3 prevotes for a particular block or nil.
 // Returns -1 if no such round exists.
-func (hvs *HeightVoteSet) POLInfo() (polRound agtypes.INT, polBlockID pbtypes.BlockID) {
+func (hvs *HeightVoteSet) POLInfo() (polRound def.INT, polBlockID pbtypes.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	for r := hvs.round; r >= 0; r-- {
@@ -170,7 +171,7 @@ func (hvs *HeightVoteSet) POLInfo() (polRound agtypes.INT, polBlockID pbtypes.Bl
 	return -1, pbtypes.BlockID{}
 }
 
-func (hvs *HeightVoteSet) getVoteSet(round agtypes.INT, type_ pbtypes.VoteType) *agtypes.VoteSet {
+func (hvs *HeightVoteSet) getVoteSet(round def.INT, type_ pbtypes.VoteType) *agtypes.VoteSet {
 	rvs, ok := hvs.roundVoteSets[round]
 	if !ok {
 		return nil
@@ -195,7 +196,7 @@ func (hvs *HeightVoteSet) StringIndented(indent string) string {
 	defer hvs.mtx.Unlock()
 	vsStrings := make([]string, 0, (len(hvs.roundVoteSets)+1)*2)
 	// rounds 0 ~ hvs.round inclusive
-	for round := agtypes.INT(0); round <= hvs.round; round++ {
+	for round := def.INT(0); round <= hvs.round; round++ {
 		voteSetString := hvs.roundVoteSets[round].Prevotes.StringShort()
 		vsStrings = append(vsStrings, voteSetString)
 		voteSetString = hvs.roundVoteSets[round].Precommits.StringShort()
@@ -223,7 +224,7 @@ func (hvs *HeightVoteSet) StringIndented(indent string) string {
 // NOTE: if there are too many peers, or too much peer churn,
 // this can cause memory issues.
 // TODO: implement ability to remove peers too
-func (hvs *HeightVoteSet) SetPeerMaj23(round agtypes.INT, type_ pbtypes.VoteType, peerID string, blockID *pbtypes.BlockID) {
+func (hvs *HeightVoteSet) SetPeerMaj23(round def.INT, type_ pbtypes.VoteType, peerID string, blockID *pbtypes.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	if !pbtypes.IsVoteTypeValid(type_) {

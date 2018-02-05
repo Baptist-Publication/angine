@@ -16,16 +16,18 @@ package types
 
 import (
 	"sync"
+
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 type (
 	Hooker interface {
-		Sync(INT, INT, *BlockCache) (interface{}, error)
-		Async(INT, INT, *BlockCache)
+		Sync(def.INT, def.INT, *BlockCache) (interface{}, error)
+		Async(def.INT, def.INT, *BlockCache)
 		Result() interface{}
 	}
 
-	HookCallbackFunc func(height, round INT, block *BlockCache) (interface{}, error)
+	HookCallbackFunc func(height, round def.INT, block *BlockCache) (interface{}, error)
 
 	Hook struct {
 		wg       sync.WaitGroup
@@ -61,7 +63,7 @@ func (h *Hook) Error() error {
 	return h.err
 }
 
-func (h *Hook) Sync(height, round INT, block *BlockCache) (interface{}, error) {
+func (h *Hook) Sync(height, round def.INT, block *BlockCache) (interface{}, error) {
 	h.res = nil
 	h.err = nil
 	h.drain()
@@ -76,7 +78,7 @@ func (h *Hook) Sync(height, round INT, block *BlockCache) (interface{}, error) {
 	return h.res, h.err
 }
 
-func (h *Hook) Async(height, round INT, block *BlockCache, cb func(interface{}), onError func(error)) {
+func (h *Hook) Async(height, round def.INT, block *BlockCache, cb func(interface{}), onError func(error)) {
 	var (
 		res interface{}
 		err error

@@ -27,9 +27,11 @@ import (
 	sttpb "github.com/Baptist-Publication/angine/protos/state"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	agtypes "github.com/Baptist-Publication/angine/types"
+	agutils "github.com/Baptist-Publication/angine/utils"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	dbm "github.com/Baptist-Publication/chorus-module/lib/go-db"
 	"github.com/Baptist-Publication/chorus-module/lib/go-events"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 )
 
 var (
@@ -59,13 +61,13 @@ type State struct {
 	ChainID    string
 
 	// updated at end of ExecBlock
-	LastBlockHeight agtypes.INT
+	LastBlockHeight def.INT
 	// Genesis state has this set to 0.  So, Block(H=0) does not exist.
 	LastBlockID        pbtypes.BlockID
-	LastBlockTime      agtypes.INT
+	LastBlockTime      def.INT
 	Validators         *agtypes.ValidatorSet
 	LastValidators     *agtypes.ValidatorSet // block.LastCommit validated against this
-	LastNonEmptyHeight agtypes.INT
+	LastNonEmptyHeight def.INT
 	// some where in the past, maybe jump through lots of blocks
 
 	valSetLoader agtypes.ValSetLoaderFunc
@@ -84,7 +86,7 @@ func (s *State) FillDataFromPbBytes(pbbys []byte) error {
 	}
 	s.GenesisDoc = agtypes.GenesisDocFromJSON(pbState.GenesisDoc.JSONData)
 	s.ChainID = pbState.ChainID
-	s.LastBlockHeight = pbState.LastBlockHeight
+	s.updateLastBlockHeight(pbState.LastBlockHeight) // after set ChainID
 	s.LastBlockID = (*pbState.LastBlockID)
 	s.LastBlockTime = pbState.LastBlockTime
 	s.Validators = agtypes.ValSetFromJsonBytes(pbState.Validators.JSONData)
@@ -259,15 +261,20 @@ func (s *State) SetBlockAndValidators(header *pbtypes.Header, blockPartsHeader *
 }
 
 func (s *State) setBlockAndValidators(
-	height, nonEmptyHeight agtypes.INT, blockID pbtypes.BlockID, blockTime agtypes.INT,
+	height, nonEmptyHeight def.INT, blockID pbtypes.BlockID, blockTime def.INT,
 	prevValSet, nextValSet *agtypes.ValidatorSet) {
 
-	s.LastBlockHeight = height
+	s.updateLastBlockHeight(height)
 	s.LastBlockID = blockID
 	s.LastBlockTime = blockTime
 	s.Validators = nextValSet
 	s.LastValidators = prevValSet
 	s.LastNonEmptyHeight = nonEmptyHeight
+}
+
+func (s *State) updateLastBlockHeight(height def.INT) {
+	s.LastBlockHeight = height
+	agutils.UpdateHeight(s.ChainID, height)
 }
 
 func (s *State) SetLogger(logger *zap.Logger) {
@@ -278,7 +285,7 @@ func (s *State) GetValidators() (*agtypes.ValidatorSet, *agtypes.ValidatorSet) {
 	return s.LastValidators, s.Validators
 }
 
-func (s *State) GetLastBlockInfo() (pbtypes.BlockID, agtypes.INT, agtypes.INT) {
+func (s *State) GetLastBlockInfo() (pbtypes.BlockID, def.INT, def.INT) {
 	return s.LastBlockID, s.LastBlockHeight, s.LastBlockTime
 }
 

@@ -35,6 +35,7 @@ import (
 	agtypes "github.com/Baptist-Publication/angine/types"
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
+	"github.com/Baptist-Publication/chorus-module/xlib/def"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -45,28 +46,28 @@ import (
 // TimeoutParams holds timeouts and deltas for each round step.
 // All timeouts and deltas in milliseconds.
 type TimeoutParams struct {
-	Propose0          agtypes.INT
-	ProposeDelta      agtypes.INT
-	Prevote0          agtypes.INT
-	PrevoteDelta      agtypes.INT
-	Precommit0        agtypes.INT
-	PrecommitDelta    agtypes.INT
-	Commit0           agtypes.INT
+	Propose0          def.INT
+	ProposeDelta      def.INT
+	Prevote0          def.INT
+	PrevoteDelta      def.INT
+	Precommit0        def.INT
+	PrecommitDelta    def.INT
+	Commit0           def.INT
 	SkipTimeoutCommit bool
 }
 
 // Wait this long for a proposal
-func (tp *TimeoutParams) Propose(round agtypes.INT) time.Duration {
+func (tp *TimeoutParams) Propose(round def.INT) time.Duration {
 	return time.Duration(tp.Propose0+tp.ProposeDelta*round) * time.Millisecond
 }
 
 // After receiving any +2/3 prevote, wait this long for stragglers
-func (tp *TimeoutParams) Prevote(round agtypes.INT) time.Duration {
+func (tp *TimeoutParams) Prevote(round def.INT) time.Duration {
 	return time.Duration(tp.Prevote0+tp.PrevoteDelta*round) * time.Millisecond
 }
 
 // After receiving any +2/3 precommits, wait this long for stragglers
-func (tp *TimeoutParams) Precommit(round agtypes.INT) time.Duration {
+func (tp *TimeoutParams) Precommit(round def.INT) time.Duration {
 	return time.Duration(tp.Precommit0+tp.PrecommitDelta*round) * time.Millisecond
 }
 
@@ -78,13 +79,13 @@ func (tp *TimeoutParams) Commit(t time.Time) time.Time {
 // InitTimeoutParamsFromConfig initializes parameters from config
 func InitTimeoutParamsFromConfig(config *viper.Viper) *TimeoutParams {
 	return &TimeoutParams{
-		Propose0:          agtypes.INT(config.GetInt("timeout_propose")),
-		ProposeDelta:      agtypes.INT(config.GetInt("timeout_propose_delta")),
-		Prevote0:          agtypes.INT(config.GetInt("timeout_prevote")),
-		PrevoteDelta:      agtypes.INT(config.GetInt("timeout_prevote_delta")),
-		Precommit0:        agtypes.INT(config.GetInt("timeout_precommit")),
-		PrecommitDelta:    agtypes.INT(config.GetInt("timeout_precommit_delta")),
-		Commit0:           agtypes.INT(config.GetInt("timeout_commit")),
+		Propose0:          def.INT(config.GetInt("timeout_propose")),
+		ProposeDelta:      def.INT(config.GetInt("timeout_propose_delta")),
+		Prevote0:          def.INT(config.GetInt("timeout_prevote")),
+		PrevoteDelta:      def.INT(config.GetInt("timeout_prevote_delta")),
+		Precommit0:        def.INT(config.GetInt("timeout_precommit")),
+		PrecommitDelta:    def.INT(config.GetInt("timeout_precommit_delta")),
+		Commit0:           def.INT(config.GetInt("timeout_commit")),
 		SkipTimeoutCommit: config.GetBool("skip_timeout_commit"),
 	}
 }
@@ -103,8 +104,8 @@ var (
 
 // Immutable when returned from ConsensusState.GetRoundState()
 type RoundState struct {
-	Height             agtypes.INT // Height we are working on
-	Round              agtypes.INT
+	Height             def.INT // Height we are working on
+	Round              def.INT
 	Step               csspb.RoundStepType
 	StartTime          time.Time
 	CommitTime         time.Time // Subjective time when +2/3 precommits for Block at Round were found
@@ -112,11 +113,11 @@ type RoundState struct {
 	Proposal           *pbtypes.Proposal
 	ProposalBlock      *agtypes.BlockCache
 	ProposalBlockParts *agtypes.PartSet
-	LockedRound        agtypes.INT
+	LockedRound        def.INT
 	LockedBlock        *agtypes.BlockCache
 	LockedBlockParts   *agtypes.PartSet
 	Votes              *HeightVoteSet
-	CommitRound        agtypes.INT      //
+	CommitRound        def.INT          //
 	LastCommit         *agtypes.VoteSet // Last precommits at Height-1
 	LastValidators     *agtypes.ValidatorSet
 }
@@ -175,7 +176,7 @@ func (rs *RoundState) StringShort() string {
 var (
 	msgQueueSize = 1000
 
-	int0            agtypes.INT
+	int0            def.INT
 	sizeOfInt       = unsafe.Sizeof(int0)
 	emptyRoundLimit = 1 << (*(*uint)(unsafe.Pointer(&sizeOfInt))*8 - 2)
 )
@@ -239,8 +240,8 @@ type timeoutInfo struct {
 
 type timeoutInfoJson struct {
 	Duration time.Duration       `json:"duration"`
-	Height   agtypes.INT         `json:"height"`
-	Round    agtypes.INT         `json:"round"`
+	Height   def.INT             `json:"height"`
+	Round    def.INT             `json:"round"`
 	Step     csspb.RoundStepType `json:"step"`
 }
 
@@ -298,8 +299,8 @@ type ConsensusState struct {
 	nSteps int // used for testing to limit the number of transitions the state makes
 
 	// allow certain function to be overwritten for testing
-	decideProposal func(height, round agtypes.INT)
-	doPrevote      func(height, round agtypes.INT)
+	decideProposal func(height, round def.INT)
+	doPrevote      func(height, round def.INT)
 	setProposal    func(proposal *pbtypes.Proposal) error
 
 	// valSetLoader func(height, round, size int) *types.ValidatorSet
@@ -399,7 +400,7 @@ func (cs *ConsensusState) GetTotalVotingPower() int64 {
 	return cs.Validators.TotalVotingPower()
 }
 
-func (cs *ConsensusState) GetValidators() (agtypes.INT, []*agtypes.Validator) {
+func (cs *ConsensusState) GetValidators() (def.INT, []*agtypes.Validator) {
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
 	return cs.state.LastBlockHeight, cs.state.Validators.Copy().Validators
@@ -423,7 +424,7 @@ func (cs *ConsensusState) SetBadVoteCollector(c agtypes.IBadVoteCollector) {
 	cs.badvoteCollector = c
 }
 
-func (cs *ConsensusState) LoadCommit(height agtypes.INT) *agtypes.CommitCache {
+func (cs *ConsensusState) LoadCommit(height def.INT) *agtypes.CommitCache {
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
 	if height == cs.blockStore.Height() {
@@ -543,7 +544,7 @@ func (cs *ConsensusState) SetProposal(proposal *pbtypes.Proposal, peerKey string
 }
 
 // May block on send if queue is full.
-func (cs *ConsensusState) AddProposalBlockPart(height, round agtypes.INT, part *pbtypes.Part, peerKey string) error {
+func (cs *ConsensusState) AddProposalBlockPart(height, round def.INT, part *pbtypes.Part, peerKey string) error {
 
 	if peerKey == "" {
 		cs.internalMsgQueue <- genMsgInfo(&csspb.BlockPartMessage{height, round, part}, "")
@@ -569,11 +570,11 @@ func (cs *ConsensusState) SetProposalAndBlock(proposal *pbtypes.Proposal, block 
 //------------------------------------------------------------
 // internal functions for managing the state
 
-func (cs *ConsensusState) updateHeight(height agtypes.INT) {
+func (cs *ConsensusState) updateHeight(height def.INT) {
 	cs.Height = height
 }
 
-func (cs *ConsensusState) updateRoundStep(round agtypes.INT, step csspb.RoundStepType) {
+func (cs *ConsensusState) updateRoundStep(round def.INT, step csspb.RoundStepType) {
 	cs.Round = round
 	cs.Step = step
 }
@@ -585,7 +586,7 @@ func (cs *ConsensusState) scheduleRound0(rs *RoundState) {
 }
 
 // Attempt to schedule a timeout (by sending timeoutInfo on the tickChan)
-func (cs *ConsensusState) scheduleTimeout(duration time.Duration, height, round agtypes.INT, step csspb.RoundStepType) {
+func (cs *ConsensusState) scheduleTimeout(duration time.Duration, height, round def.INT, step csspb.RoundStepType) {
 	cs.timeoutTicker.ScheduleTimeout(timeoutInfo{
 		timeoutInfoJson: timeoutInfoJson{
 			Duration: duration,
@@ -866,7 +867,7 @@ func (cs *ConsensusState) handleTimeout(ti timeoutInfo, rs RoundState) {
 // Enter: `timeoutPrecommits` after any +2/3 precommits from (height,round-1)
 // Enter: `startTime = commitTime+timeoutCommit` from NewHeight(height)
 // NOTE: cs.StartTime was already set for height.
-func (cs *ConsensusState) enterNewRound(height, round agtypes.INT) {
+func (cs *ConsensusState) enterNewRound(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && cs.Step != csspb.RoundStepType_NewHeight) {
 		cs.slogger.Debugf("enterNewRound(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -915,7 +916,7 @@ func (cs *ConsensusState) enterNewRound(height, round agtypes.INT) {
 }
 
 // Enter: from NewRound(height,round).
-func (cs *ConsensusState) enterPropose(height, round agtypes.INT) {
+func (cs *ConsensusState) enterPropose(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && csspb.RoundStepType_Propose <= cs.Step) {
 		cs.slogger.Debugf("enterPropose(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -951,7 +952,7 @@ func (cs *ConsensusState) enterPropose(height, round agtypes.INT) {
 	}
 }
 
-func (cs *ConsensusState) defaultDecideProposal(height, round agtypes.INT) {
+func (cs *ConsensusState) defaultDecideProposal(height, round def.INT) {
 	var block *agtypes.BlockCache
 	var blockParts *agtypes.PartSet
 
@@ -1086,7 +1087,7 @@ func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
 // Enter: any +2/3 prevotes for future round.
 // Prevote for LockedBlock if we're locked, or ProposalBlock if valid.
 // Otherwise vote nil.
-func (cs *ConsensusState) enterPrevote(height, round agtypes.INT) {
+func (cs *ConsensusState) enterPrevote(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && csspb.RoundStepType_Prevote <= cs.Step) {
 		cs.slogger.Debugf("enterPrevote(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -1117,7 +1118,7 @@ func (cs *ConsensusState) enterPrevote(height, round agtypes.INT) {
 	// (so we have more time to try and collect +2/3 prevotes for a single block)
 }
 
-func (cs *ConsensusState) defaultDoPrevote(height, round agtypes.INT) {
+func (cs *ConsensusState) defaultDoPrevote(height, round def.INT) {
 	// If a block is locked, prevote that.
 	var prevotedBlock *agtypes.BlockCache
 	defer func() {
@@ -1173,7 +1174,7 @@ func getBlockTxTotalSize(txs agtypes.Txs) int {
 }
 
 // Enter: any +2/3 prevotes at next round.
-func (cs *ConsensusState) enterPrevoteWait(height, round agtypes.INT) {
+func (cs *ConsensusState) enterPrevoteWait(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && csspb.RoundStepType_PrevoteWait <= cs.Step) {
 		cs.slogger.Debugf("enterPrevoteWait(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -1199,7 +1200,7 @@ func (cs *ConsensusState) enterPrevoteWait(height, round agtypes.INT) {
 // Lock & precommit the ProposalBlock if we have enough prevotes for it (a POL in this round)
 // else, unlock an existing lock and precommit nil if +2/3 of prevotes were nil,
 // else, precommit nil otherwise.
-func (cs *ConsensusState) enterPrecommit(height, round agtypes.INT) {
+func (cs *ConsensusState) enterPrecommit(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && csspb.RoundStepType_Precommit <= cs.Step) {
 		cs.slogger.Debugf("enterPrecommit(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -1313,7 +1314,7 @@ func (cs *ConsensusState) enterPrecommit(height, round agtypes.INT) {
 }
 
 // Enter: any +2/3 precommits for next round.
-func (cs *ConsensusState) enterPrecommitWait(height, round agtypes.INT) {
+func (cs *ConsensusState) enterPrecommitWait(height, round def.INT) {
 	if cs.Height != height || round < cs.Round || (cs.Round == round && csspb.RoundStepType_PrecommitWait <= cs.Step) {
 		cs.slogger.Debugf("enterPrecommitWait(%v/%v): Invalid args. Current step: %v/%v/%v", height, round, cs.Height, cs.Round, cs.Step)
 		return
@@ -1335,7 +1336,7 @@ func (cs *ConsensusState) enterPrecommitWait(height, round agtypes.INT) {
 }
 
 // Enter: +2/3 precommits for block
-func (cs *ConsensusState) enterCommit(height, commitRound agtypes.INT) {
+func (cs *ConsensusState) enterCommit(height, commitRound def.INT) {
 	if cs.Height != height || csspb.RoundStepType_Commit <= cs.Step {
 		cs.slogger.Debugf("enterCommit(%v/%v): Invalid args. Current step: %v/%v/%v", height, commitRound, cs.Height, cs.Round, cs.Step)
 		return
@@ -1381,7 +1382,7 @@ func (cs *ConsensusState) enterCommit(height, commitRound agtypes.INT) {
 }
 
 // If we have the block AND +2/3 commits for it, finalize.
-func (cs *ConsensusState) tryFinalizeCommit(height agtypes.INT) {
+func (cs *ConsensusState) tryFinalizeCommit(height def.INT) {
 	if cs.Height != height {
 		PanicSanity(Fmt("tryFinalizeCommit() cs.Height: %v vs height: %v", cs.Height, height))
 	}
@@ -1402,7 +1403,7 @@ func (cs *ConsensusState) tryFinalizeCommit(height agtypes.INT) {
 }
 
 // Increment height and goto RoundStepNewHeight
-func (cs *ConsensusState) finalizeCommit(height agtypes.INT) {
+func (cs *ConsensusState) finalizeCommit(height def.INT) {
 	if cs.Height != height || cs.Step != csspb.RoundStepType_Commit {
 		cs.slogger.Debugf("finalizeCommit(%v): Invalid args. Current step: %v/%v/%v", height, cs.Height, cs.Round, cs.Step)
 		return
@@ -1509,7 +1510,7 @@ func (cs *ConsensusState) defaultSetProposal(proposal *pbtypes.Proposal) error {
 
 // NOTE: block is not necessarily valid.
 // Asynchronously triggers either enterPrevote (before we timeout of propose) or tryFinalizeCommit, once we have the full block.
-func (cs *ConsensusState) addProposalBlockPart(height agtypes.INT, part *pbtypes.Part, verify bool) (added bool, err error) {
+func (cs *ConsensusState) addProposalBlockPart(height def.INT, part *pbtypes.Part, verify bool) (added bool, err error) {
 	// Blocks might be reused, so round mismatch is OK
 	if cs.Height != height {
 		return false, nil
@@ -1694,7 +1695,7 @@ func (cs *ConsensusState) signVote(type_ pbtypes.VoteType, hash []byte, header *
 	vote := &pbtypes.Vote{
 		Data: &pbtypes.VoteData{
 			ValidatorAddress: addr,
-			ValidatorIndex:   agtypes.INT(valIndex),
+			ValidatorIndex:   def.INT(valIndex),
 			Height:           cs.Height,
 			Round:            cs.Round,
 			Type:             type_,
@@ -1726,7 +1727,7 @@ func (cs *ConsensusState) signAddVote(type_ pbtypes.VoteType, hash []byte, heade
 
 //---------------------------------------------------------
 
-func CompareHRS(h1, r1 agtypes.INT, s1 csspb.RoundStepType, h2, r2 agtypes.INT, s2 csspb.RoundStepType) int {
+func CompareHRS(h1, r1 def.INT, s1 csspb.RoundStepType, h2, r2 def.INT, s2 csspb.RoundStepType) int {
 	if h1 < h2 {
 		return -1
 	} else if h1 > h2 {
