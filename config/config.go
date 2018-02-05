@@ -142,7 +142,7 @@ func genGenesiFile(path string, chainId string, gVals []types.GenesisValidator) 
 	}
 	genDoc := &types.GenesisDoc{
 		ChainID: chainId,
-		Plugins: "specialop",
+		Plugins: "specialop,suspect,querycache",
 	}
 	genDoc.Validators = gVals
 	return genDoc, genDoc.SaveAs(path)
