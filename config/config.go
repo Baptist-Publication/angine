@@ -15,6 +15,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -76,6 +77,7 @@ func InitRuntime(root string, chainId string) error {
 	if cmn.FileExists(configFilePath) {
 		return errors.New("config.toml already exists!")
 	}
+	fmt.Println("Using config file:", configFilePath)
 
 	err = cmn.WriteFile(configFilePath, []byte(parseConfigTpl("anonymous", root)), 0644)
 	if err != nil {
@@ -87,7 +89,7 @@ func InitRuntime(root string, chainId string) error {
 	conf.AutomaticEnv()
 
 	// priv_validator.json
-	priv := genPrivFile(conf.GetString("priv_validator_file"))
+	genPrivFile(conf.GetString("priv_validator_file"))
 	// gvs := []types.GenesisValidator{types.GenesisValidator{
 	// 	PubKey: priv.PubKey,
 	// 	Amount: 100,
@@ -95,10 +97,13 @@ func InitRuntime(root string, chainId string) error {
 	// }}
 
 	// genesis.json
-	_, err = genGenesiFile(conf.GetString("genesis_file"), chainId, nil)
+	genDoc, err := genGenesiFile(conf.GetString("genesis_file"), chainId, nil)
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("Initialized ", genDoc.ChainID, "genesis", conf.GetString("genesis_file"), "priv_validator", conf.GetString("priv_validator_file"))
+	fmt.Println("Check the files generated, make sure everything is OK.")
 
 	return nil
 }
