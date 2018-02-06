@@ -605,7 +605,7 @@ func (conR *ConsensusReactor) gossipVotes(rs *RoundState, ps *PeerState) bool {
 		// Load the block commit for prs.Height,
 		// which contains precommit signatures for prs.Height.
 		commit := conR.conS.blockStore.LoadBlockCommit(prs.Height)
-		conR.slogger.Infow("Loaded BlockCommit for catch-up", "height", prs.Height, "commit", commit)
+		conR.slogger.Debug("Loaded BlockCommit for catch-up", "height", prs.Height, "commit", commit)
 		if ps.PickSendVote(commit) {
 			return true
 		}
