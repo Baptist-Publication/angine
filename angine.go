@@ -686,9 +686,6 @@ func (ang *Angine) RecoverFromCrash(appHash []byte, appBlockHeight def.INT) erro
 		if bytes.Equal(stateAppHash, appHash) {
 			sblock := ang.blockstore.LoadBlock(storeBlockHeight)
 			ang.stateMachine.Validators = sblock.VSetCache().Copy()
-			for _, val := range ang.stateMachine.Validators.Validators {
-				fmt.Println("v :", val.String())
-			}
 			ang.stateMachine.Validators.IncrementAccum(1)
 			// we're all synced up
 			ang.logger.Debug("RelpayBlocks: Already synced")
