@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	merkle "github.com/Baptist-Publication/chorus-module/lib/go-merkle"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tendermint/tmlibs/merkle"
 )
 
 func (blockID *BlockID) IsZero() bool {

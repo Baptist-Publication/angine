@@ -21,10 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tmlibs/db"
-	"github.com/vmihailenco/msgpack"
-
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
+	"github.com/Baptist-Publication/chorus-module/lib/go-db"
+	"github.com/vmihailenco/msgpack"
 )
 
 var lastBlockKey = []byte("lastblock")
