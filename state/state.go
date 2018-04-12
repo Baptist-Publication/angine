@@ -44,7 +44,7 @@ var (
 type IBlockExecutable interface {
 	BeginBlock(*agtypes.BlockCache, events.Fireable, *pbtypes.PartSetHeader)
 	ExecBlock(*agtypes.BlockCache, events.Fireable, *agtypes.ExecuteResult)
-	EndBlock(*agtypes.BlockCache, events.Fireable, *pbtypes.PartSetHeader, []*agtypes.ValidatorAttr, *agtypes.ValidatorSet)
+	EndBlock(*agtypes.BlockCache, events.Fireable, *pbtypes.PartSetHeader)
 }
 
 // NOTE: not goroutine-safe.

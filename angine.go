@@ -284,17 +284,17 @@ func (ang *Angine) assembleStateMachine(stateM *state.State) {
 		}
 	})
 
-	spRouter := trace.NewRouter(ang.logger, conf, stateM, ang.PrivValidator())
-	spReactor := trace.NewTraceReactor(ang.logger, conf, spRouter)
-	spRouter.SetReactor(spReactor)
-	spRouter.RegisterHandler(trace.SpecialOPChannel, ang.SpecialOPResponseHandler)
+	// spRouter := trace.NewRouter(ang.logger, conf, stateM, ang.PrivValidator())
+	// spReactor := trace.NewTraceReactor(ang.logger, conf, spRouter)
+	// spRouter.SetReactor(spReactor)
+	// spRouter.RegisterHandler(trace.SpecialOPChannel, ang.SpecialOPResponseHandler)
 
 	// privKey := ang.privValidator.GetPrivateKey()
 
 	ang.p2pSwitch.AddReactor("MEMPOOL", memReactor)
 	ang.p2pSwitch.AddReactor("BLOCKCHAIN", bcReactor)
 	ang.p2pSwitch.AddReactor("CONSENSUS", consensusReactor)
-	ang.p2pSwitch.AddReactor("SPECIALOP", spReactor)
+	// ang.p2pSwitch.AddReactor("SPECIALOP", spReactor)
 
 	var addrBook *p2p.AddrBook
 	if conf.GetBool("pex_reactor") {
@@ -312,7 +312,7 @@ func (ang *Angine) assembleStateMachine(stateM *state.State) {
 	ang.blockstore = blockStore
 	ang.consensus = consensusState
 	ang.mempool = mem
-	ang.traceRouter = spRouter
+	// ang.traceRouter = spRouter
 	ang.stateMachine = stateM
 	ang.addrBook = addrBook
 	ang.stateMachine.SetBlockExecutable(ang)
@@ -648,11 +648,9 @@ func (ang *Angine) ExecBlock(block *agtypes.BlockCache, eventFireable events.Fir
 }
 
 // plugins modify changedValidators inplace
-func (ang *Angine) EndBlock(block *agtypes.BlockCache, eventFireable events.Fireable, blockPartsHeader *pbtypes.PartSetHeader, changedValAttrs []*agtypes.ValidatorAttr, nextVS *agtypes.ValidatorSet) {
+func (ang *Angine) EndBlock(block *agtypes.BlockCache, eventFireable events.Fireable, blockPartsHeader *pbtypes.PartSetHeader) {
 	params := &plugin.EndBlockParams{
-		Block:             block,
-		ChangedValidators: changedValAttrs,
-		NextValidatorSet:  nextVS,
+		Block: block,
 	}
 	for _, p := range ang.plugins {
 		p.EndBlock(params)
@@ -833,10 +831,6 @@ func (ang *Angine) InitPlugins() {
 	}
 	for _, pn := range ps {
 		switch pn {
-		case "specialop":
-			p := &plugin.Specialop{}
-			p.Init(params)
-			ang.plugins = append(ang.plugins, p)
 		case "suspect":
 			p := &plugin.SuspectPlugin{}
 			p.SetEventSwitch(*ang.eventSwitch)

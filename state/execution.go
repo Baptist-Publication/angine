@@ -46,15 +46,14 @@ func (s *State) ExecBlock(eventSwitch agtypes.EventSwitch, block *agtypes.BlockC
 	// copy the valset
 	valSet := block.VSetCache().Copy()
 	bheader := block.Header
-	nextValSet := s.getNextValSet(valSet, bheader.Height, round)
-	changedValidators := make([]*agtypes.ValidatorAttr, 0)
 
 	s.blockExecutable.BeginBlock(block, eventSwitch, blockPartsHeader)
 	s.execBlock(eventSwitch, block, round)
-	s.blockExecutable.EndBlock(block, eventSwitch, blockPartsHeader, changedValidators, nextValSet)
+	s.blockExecutable.EndBlock(block, eventSwitch, blockPartsHeader)
 
 	// All good!
 	// Update validator accums and set state variables
+	nextValSet := s.getNextValSet(valSet, bheader.Height, round)
 	nextValSet.IncrementAccum(1)
 	s.SetBlockAndValidators(bheader, blockPartsHeader, valSet, nextValSet)
 
@@ -69,7 +68,7 @@ func (s *State) getNextValSet(currnet *agtypes.ValidatorSet, height, round def.I
 	var valSet *agtypes.ValidatorSet
 
 	// we re-elect every 500 blocks
-	if s.valSetLoader != nil && height%def.ElectionFrequency == 0 {
+	if s.valSetLoader != nil && height%20 == 0 {
 		valSet = s.valSetLoader(height, round, 21)
 		if len(valSet.Validators) == 0 {
 			panic("Election happened, but no validator is elected")

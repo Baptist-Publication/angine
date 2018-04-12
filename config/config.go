@@ -159,7 +159,6 @@ func SetDefaults(runtime string, conf *viper.Viper) *viper.Viper {
 	conf.SetDefault("runtime", runtime)
 	conf.SetDefault("genesis_file", path.Join(runtime, "genesis.json"))
 	conf.SetDefault("moniker", "anonymous")
-	// conf.SetDefault("p2p_laddr", "tcp://0.0.0.0:46656")
 	conf.SetDefault("seeds", "")
 	conf.SetDefault("auth_by_ca", false)              // auth by ca general switch
 	conf.SetDefault("non_validator_auth_by_ca", true) // whether non-validator nodes need auth by ca, only effective when auth_by_ca is true
@@ -176,7 +175,7 @@ func SetDefaults(runtime string, conf *viper.Viper) *viper.Viper {
 
 	conf.SetDefault("signbyCA", "") // auth signature from CA
 	conf.SetDefault("log_path", "")
-	conf.SetDefault("threshold_blocks", 900)
+	conf.SetDefault("threshold_blocks", 0)
 
 	conf.SetDefault("enable_incentive", false)
 	setMempoolDefaults(conf)
@@ -206,8 +205,10 @@ func setConsensusDefaults(conf *viper.Viper) {
 	conf.SetDefault("timeout_prevote_delta", 500)
 	conf.SetDefault("timeout_precommit", 3000)
 	conf.SetDefault("timeout_precommit_delta", 500)
-	conf.SetDefault("timeout_commit", 10000)
+	conf.SetDefault("timeout_commit", 1000)
 	conf.SetDefault("skip_timeout_commit", false)
 
 	conf.SetDefault("tracerouter_msg_ttl", 5) // seconds
+
+	conf.SetDefault("election", 20)
 }
