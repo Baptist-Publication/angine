@@ -1052,15 +1052,39 @@ func (cs *ConsensusState) createProposalBlock() (block *agtypes.BlockCache, bloc
 }
 
 func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
-	type EcoInitAllocTx struct {
+	type EcoInitTokenTx struct {
+		To     []byte   `json:"to"`
+		Amount *big.Int `json:"amount"`
+		Extra  []byte   `json:"extra"`
+	}
+	type EcoInitShareTx struct {
 		To     []byte   `json:"to"`
 		Amount *big.Int `json:"amount"`
 		Extra  []byte   `json:"extra"`
 	}
 
-	txs := make([]agtypes.Tx, len(cs.state.GenesisDoc.InitAlloc))
-	for i, v := range cs.state.GenesisDoc.InitAlloc {
-		amount, ok := new(big.Int).SetString(v.Balance, 10)
+	txs := make([]agtypes.Tx, 0, len(cs.state.GenesisDoc.InitToken)+len(cs.state.GenesisDoc.InitShare))
+	for _, v := range cs.state.GenesisDoc.InitToken {
+		amount, ok := new(big.Int).SetString(v.Amount, 10)
+		if !ok {
+			return nil, fmt.Errorf("Invliad genisis file")
+		}
+		addr, err := hex.DecodeString(v.Address)
+		if err != nil {
+			return nil, fmt.Errorf("Invliad genisis file")
+		}
+		txByte, err := json.Marshal(EcoInitTokenTx{
+			To:     addr,
+			Amount: amount,
+			Extra:  []byte(v.Extra),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("Internal error when marshal tx, err:%v", err)
+		}
+		txs = append(txs, append([]byte{'e', 'c', 'o', 0x01}, txByte...))
+	}
+	for _, v := range cs.state.GenesisDoc.InitShare {
+		amount, ok := new(big.Int).SetString(v.Amount, 10)
 		if !ok {
 			return nil, fmt.Errorf("Invliad genisis file")
 		}
@@ -1068,7 +1092,7 @@ func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Invliad genisis file")
 		}
-		txByte, err := json.Marshal(EcoInitAllocTx{
+		txByte, err := json.Marshal(EcoInitShareTx{
 			To:     pubkey,
 			Amount: amount,
 			Extra:  []byte(v.Extra),
@@ -1076,7 +1100,7 @@ func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Internal error when marshal tx, err:%v", err)
 		}
-		txs[i] = append([]byte{'e', 'c', 'o', 0x04}, txByte...)
+		txs = append(txs, append([]byte{'e', 'c', 'o', 0x02}, txByte...))
 	}
 
 	return txs, nil

@@ -61,11 +61,17 @@ type GenesisDoc struct {
 	AppHash     Bytes              `json:"app_hash"`
 	Plugins     string             `json:"plugins"`
 
-	InitAlloc []struct {
-		Pubkey  string `json:"pubkey"`
-		Balance string `json:"balance"`
+	InitToken []struct {
+		Address string `json:"address"`
+		Amount  string `json:"amount"`
 		Extra   string `json:"extra"`
-	} `json:"alloc"`
+	} `json:"init_token"`
+
+	InitShare []struct {
+		Pubkey string `json:"pubkey"`
+		Amount string `json:"amount"`
+		Extra  string `json:"extra"`
+	} `json:"init_share"`
 }
 
 // Utility method for saving GenensisDoc as JSON file.
