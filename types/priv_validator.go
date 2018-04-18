@@ -28,6 +28,7 @@ import (
 	. "github.com/Baptist-Publication/chorus-module/lib/go-common"
 	"github.com/Baptist-Publication/chorus-module/lib/go-crypto"
 	"github.com/Baptist-Publication/chorus-module/xlib/def"
+	"github.com/Baptist-Publication/chorus/src/eth/common"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +53,7 @@ func voteToStep(vote *pbtypes.Vote) int8 {
 
 type PrivValidatorJSON struct {
 	PubKey        crypto.StPubKey    `json:"pub_key"`
-	Coinbase      crypto.StPubKey    `json:"coin_base"`
+	Coinbase      Bytes              `json:"coin_base"`
 	LastHeight    def.INT            `json:"last_height"`
 	LastRound     def.INT            `json:"last_round"`
 	LastStep      int8               `json:"last_step"`
@@ -89,9 +90,9 @@ func (pv *PrivValidator) GetPubKey() crypto.PubKey {
 	return pv.PubKey.PubKey
 }
 
-func (pv *PrivValidator) CoinbaseKey() crypto.PubKey {
-	return pv.Coinbase.PubKey
-}
+// func (pv *PrivValidator) CoinbaseKey() crypto.PubKey {
+// 	return pv.Coinbase.PubKey
+// }
 
 func (pv *PrivValidator) GetLastSignature() crypto.Signature {
 	return pv.LastSignature.Signature
@@ -139,8 +140,10 @@ func (privVal *PrivValidator) SetSigner(s Signer) {
 }
 
 func (privVal *PrivValidator) GetCoinbase() []byte {
-	pub := privVal.CoinbaseKey().(*crypto.PubKeyEd25519)
-	return (*pub)[:]
+	if len(privVal.Coinbase) != common.AddressLength {
+		return nil
+	}
+	return privVal.Coinbase[:]
 }
 
 // Generates a new validator with private key.
@@ -150,10 +153,10 @@ func GenPrivValidator(logger *zap.Logger) *PrivValidator {
 	pubKeyBytes := ed25519.MakePublicKey(privKeyBytes)
 	pubKey := crypto.PubKeyEd25519(*pubKeyBytes)
 	privKey := crypto.PrivKeyEd25519(*privKeyBytes)
+
 	return &PrivValidator{
 		PrivValidatorJSON: PrivValidatorJSON{
 			PubKey:        crypto.StPubKey{&pubKey},
-			Coinbase:      crypto.StPubKey{&pubKey},
 			PrivKey:       crypto.StPrivKey{&privKey},
 			LastHeight:    0,
 			LastRound:     0,

@@ -171,6 +171,10 @@ func NewAngine(lgr *zap.Logger, tune *Tunes) (angine *Angine) {
 	}
 
 	privValidator := agtypes.LoadOrGenPrivValidator(logger, conf.GetString("priv_validator_file"))
+	if privValidator.GetCoinbase() == nil {
+		fmt.Println("invalid coinbase address !")
+		return nil
+	}
 	refuseList = refuse_list.NewRefuseList(dbBackend, dbDir)
 	eventSwitch := agtypes.NewEventSwitch(logger)
 	if _, err := eventSwitch.Start(); err != nil {
