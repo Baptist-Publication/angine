@@ -199,7 +199,7 @@ func (sp *SuspectPlugin) BeginBlock(p *BeginBlockParams) (*BeginBlockReturns, er
 			sig := sp.privkey.Sign(toSignBytes).(*crypto.SignatureEd25519)
 			tx.Signature = sig[:]
 			txBytes, _ := tx.ToBytes()
-			sp.angine.BroadcastTx(agtypes.WrapTx(agtypes.SuspectTxTag, txBytes))
+			sp.angine.BroadcastTx(agtypes.WrapTx(agtypes.TxTagAngineEcoSuspect, txBytes))
 		}
 		delete(sp.Hypocrites, k)
 	}

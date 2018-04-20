@@ -23,7 +23,7 @@ import (
 type Tx []byte
 
 func IsExtendedTx(tx []byte) bool {
-	return IsSpecialOP(tx) || IsSuspectTx(tx)
+	return IsSuspectTx(tx)
 }
 
 // NOTE: this is the hash of the encoded Tx.
@@ -64,8 +64,8 @@ func WrapTx(prefix []byte, tx []byte) []byte {
 }
 
 func UnwrapTx(tx []byte) []byte {
-	if len(tx) > 4 {
-		return tx[4:]
+	if len(tx) > 3 {
+		return tx[3:]
 	}
 	return tx
 }

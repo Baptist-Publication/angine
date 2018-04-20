@@ -6,7 +6,9 @@ import (
 )
 
 var (
-	SuspectTxTag = []byte{'s', 'p', 't', 0x01}
+	TxTagAngine           = []byte{2}
+	TxTagAngineEco        = append(TxTagAngine, 1)
+	TxTagAngineEcoSuspect = append(TxTagAngineEco, 1)
 )
 
 type SuspectTx struct {
@@ -16,7 +18,7 @@ type SuspectTx struct {
 }
 
 func IsSuspectTx(tx []byte) bool {
-	return bytes.Equal(SuspectTxTag, tx[:4])
+	return bytes.Equal(TxTagAngineEcoSuspect, tx[:3])
 }
 
 func (tx *SuspectTx) ToBytes() ([]byte, error) {
