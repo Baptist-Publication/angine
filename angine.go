@@ -621,16 +621,7 @@ func (ang *Angine) GetBlacklist() []string {
 }
 
 func (ang *Angine) Query(queryType byte, load []byte) (interface{}, error) {
-	switch queryType {
-	case agtypes.QueryTxExecution:
-		for _, p := range ang.plugins {
-			if qc, ok := p.(*plugin.QueryCachePlugin); ok {
-				return qc.ExecutionResult(load)
-			}
-		}
-	}
-
-	return nil, errors.Errorf("[Angine Query] no such query type: %v", queryType)
+	return nil, nil
 }
 
 func (ang *Angine) BeginBlock(block *agtypes.BlockCache, eventFireable events.Fireable, blockPartsHeader *pbtypes.PartSetHeader) {
@@ -844,17 +835,6 @@ func (ang *Angine) InitPlugins() {
 			p.Init(params)
 			ang.consensus.SetBadVoteCollector(p)
 			ang.p2pSwitch.SetPeerErrorReporter(p)
-			ang.plugins = append(ang.plugins, p)
-		case "querycache":
-			p := &plugin.QueryCachePlugin{}
-			querydb, err := ensureQueryDB(ang.tune.Conf.GetString("db_dir"))
-			if err != nil {
-				// querydb failure is something that we can bear with
-				ang.logger.Error("[QueryCachePlugin Init]", zap.Error(err))
-				fmt.Println(err)
-			}
-			params.DB = querydb
-			p.Init(params)
 			ang.plugins = append(ang.plugins, p)
 		case "":
 			// no core_plugins is allowed, so just ignore it
