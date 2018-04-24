@@ -1081,7 +1081,7 @@ func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Internal error when marshal tx, err:%v", err)
 		}
-		txs = append(txs, append([]byte{0x02, 0x01, 0x01}, txByte...))
+		txs = append(txs, append([]byte{0x03, 0x01, 0x01}, txByte...))
 	}
 	for _, v := range cs.state.GenesisDoc.InitShare {
 		amount, ok := new(big.Int).SetString(v.Amount, 10)
@@ -1100,7 +1100,7 @@ func (cs *ConsensusState) genInitAllocateTxs() (agtypes.Txs, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Internal error when marshal tx, err:%v", err)
 		}
-		txs = append(txs, append([]byte{0x02, 0x01, 0x02}, txByte...))
+		txs = append(txs, append([]byte{0x03, 0x01, 0x02}, txByte...))
 	}
 
 	return txs, nil
