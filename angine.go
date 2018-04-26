@@ -33,7 +33,6 @@ import (
 	"github.com/Baptist-Publication/angine/plugin"
 	pbtypes "github.com/Baptist-Publication/angine/protos/types"
 	"github.com/Baptist-Publication/angine/state"
-	"github.com/Baptist-Publication/angine/trace"
 	agtypes "github.com/Baptist-Publication/angine/types"
 	"github.com/Baptist-Publication/chorus-module/lib/ed25519"
 	cmn "github.com/Baptist-Publication/chorus-module/lib/go-common"
@@ -67,7 +66,6 @@ type (
 		conf          *viper.Viper
 		mempool       *mempool.Mempool
 		consensus     *consensus.ConsensusState
-		traceRouter   *trace.Router
 		stateMachine  *state.State
 		p2pSwitch     *p2p.Switch
 		eventSwitch   *agtypes.EventSwitch
